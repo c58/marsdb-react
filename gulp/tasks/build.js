@@ -67,11 +67,12 @@ gulp.task('build:browser', ['build:node'], function() {
     entries: config.browser.entry,
     debug: false,
     fullPaths: false,
-    standalone: 'Mars.Storages.LocalStorage',
+    standalone: 'Mars.React',
   };
 
   return browserify(customOpts)
     .exclude('marsdb')
+    .exclude('react')
     .bundle()
     .pipe(source(config.browser.bundleName))
     .pipe(buffer())
