@@ -68,10 +68,10 @@
   "main": "index.js",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/c58/marsdb-localstorage/issues"
+    "url": "https://github.com/c58/marsdb-react/issues"
   },
   "directories": {
-    "example": "example",
+    "examples": "examples",
     "test": "test"
   }
 }

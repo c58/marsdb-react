@@ -1,1 +1,1 @@
-module.exports = require('./dist/LocalStorageManager').default;
+//module.exports = require('./dist/LocalStorageManager').default;
