@@ -9,10 +9,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = createContainer;
 
-var _map2 = require('fast.js/map');
-
-var _map3 = _interopRequireDefault(_map2);
-
 var _forEach = require('fast.js/forEach');
 
 var _forEach2 = _interopRequireDefault(_forEach);

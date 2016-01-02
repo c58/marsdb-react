@@ -5,7 +5,6 @@ var _createClass = (function () { function defineProperties(target, props) { for
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.DataManagerContainer = undefined;
 
 var _react = require('react');
 
@@ -23,7 +22,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  *
  */
 
-var DataManagerContainer = exports.DataManagerContainer = (function (_React$Component) {
+var DataManagerContainer = (function (_React$Component) {
   _inherits(DataManagerContainer, _React$Component);
 
   function DataManagerContainer(props, context) {
@@ -75,3 +74,5 @@ var DataManagerContainer = exports.DataManagerContainer = (function (_React$Comp
 
   return DataManagerContainer;
 })(_react2.default.Component);
+
+exports.default = DataManagerContainer;

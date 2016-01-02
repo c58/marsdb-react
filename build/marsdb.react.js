@@ -6,7 +6,6 @@ var _createClass = (function () { function defineProperties(target, props) { for
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.DataManagerContainer = undefined;
 
 var _react = require('react');
 
@@ -24,7 +23,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  *
  */
 
-var DataManagerContainer = exports.DataManagerContainer = (function (_React$Component) {
+var DataManagerContainer = (function (_React$Component) {
   _inherits(DataManagerContainer, _React$Component);
 
   function DataManagerContainer(props, context) {
@@ -76,6 +75,8 @@ var DataManagerContainer = exports.DataManagerContainer = (function (_React$Comp
 
   return DataManagerContainer;
 })(_react2.default.Component);
+
+exports.default = DataManagerContainer;
 },{"react":undefined}],2:[function(require,module,exports){
 'use strict';
 
@@ -271,6 +272,10 @@ var ExecutionContext = (function (_EventEmitter) {
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
 var _keys2 = require('fast.js/object/keys');
 
 var _keys3 = _interopRequireDefault(_keys2);
@@ -390,6 +395,8 @@ var QueryExecutor = (function (_EventEmitter) {
 
   return QueryExecutor;
 })(_marsdb.EventEmitter);
+
+exports.default = QueryExecutor;
 },{"fast.js/forEach":9,"fast.js/map":14,"fast.js/object/keys":17,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],4:[function(require,module,exports){
 'use strict';
 
@@ -401,10 +408,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = createContainer;
-
-var _map2 = require('fast.js/map');
-
-var _map3 = _interopRequireDefault(_map2);
 
 var _forEach = require('fast.js/forEach');
 
@@ -535,7 +538,7 @@ function createContainer(Component, _ref) {
 
   return Container;
 }
-},{"./ExecutionContext":2,"./QueryExecutor":3,"./utils":5,"fast.js/forEach":9,"fast.js/map":14,"fast.js/object/assign":15,"fast.js/object/keys":17,"invariant":19,"react":undefined}],5:[function(require,module,exports){
+},{"./ExecutionContext":2,"./QueryExecutor":3,"./utils":5,"fast.js/forEach":9,"fast.js/object/assign":15,"fast.js/object/keys":17,"invariant":19,"react":undefined}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
