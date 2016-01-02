@@ -1,0 +1,1138 @@
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.Mars || (g.Mars = {})).React = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+'use strict';
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.DataManagerContainer = undefined;
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ *
+ */
+
+var DataManagerContainer = exports.DataManagerContainer = (function (_React$Component) {
+  _inherits(DataManagerContainer, _React$Component);
+
+  function DataManagerContainer(props, context) {
+    _classCallCheck(this, DataManagerContainer);
+
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(DataManagerContainer).call(this, props, context));
+
+    _this.state = { result: {} };
+    _this.query = props.component.getQuery(props.variables);
+    _this.query.on('update', _this._handleDataChanges.bind(_this));
+    _this._executeQuery();
+    return _this;
+  }
+
+  _createClass(DataManagerContainer, [{
+    key: '_executeQuery',
+    value: function _executeQuery() {
+      var _this2 = this;
+
+      this._resolved = false;
+      this.query.execute().then(function () {
+        _this2._resolved = true;
+      });
+    }
+  }, {
+    key: '_handleDataChanges',
+    value: function _handleDataChanges(result) {
+      if (this._resolved) {
+        this.setState({ result: result });
+      }
+    }
+  }, {
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount() {
+      this.query.stop();
+    }
+  }, {
+    key: 'componentWillReceiveProps',
+    value: function componentWillReceiveProps(nextProps) {
+      this.query.updateVariables(nextProps);
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      var Component = this.props.component;
+      return this._resolved ? _react2.default.createElement(Component, this.state.result) : null;
+    }
+  }]);
+
+  return DataManagerContainer;
+})(_react2.default.Component);
+},{"react":undefined}],2:[function(require,module,exports){
+'use strict';
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _map2 = require('fast.js/map');
+
+var _map3 = _interopRequireDefault(_map2);
+
+var _marsdb = require('marsdb');
+
+var _invariant = require('invariant');
+
+var _invariant2 = _interopRequireDefault(_invariant);
+
+var _utils = require('./utils');
+
+var _utils2 = _interopRequireDefault(_utils);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ *
+ */
+
+var ExecutionContext = (function (_EventEmitter) {
+  _inherits(ExecutionContext, _EventEmitter);
+
+  function ExecutionContext() {
+    var variables = arguments.length <= 0 || arguments[0] === undefined ? new Map() : arguments[0];
+
+    _classCallCheck(this, ExecutionContext);
+
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ExecutionContext).call(this));
+
+    _this.variables = variables;
+    _this.emitCleanup = _this.emitCleanup.bind(_this);
+    _this.setMaxListeners(Infinity);
+    return _this;
+  }
+
+  _createClass(ExecutionContext, [{
+    key: 'addCleanupListener',
+    value: function addCleanupListener(fn) {
+      var _this2 = this;
+
+      this.on('cleanup', fn);
+      return function () {
+        return _this2.removeListener('cleanup', fn);
+      };
+    }
+  }, {
+    key: 'emitCleanup',
+    value: function emitCleanup() {
+      var isRoot = arguments.length <= 0 || arguments[0] === undefined ? true : arguments[0];
+
+      this.emit('cleanup', isRoot);
+    }
+  }, {
+    key: 'createChildContext',
+    value: function createChildContext() {
+      var newContext = new ExecutionContext(this.variables);
+      var stopper = this.addCleanupListener(function (isRoot) {
+        newContext.emitCleanup(false);
+        !isRoot && stopper();
+      });
+      return newContext;
+    }
+  }, {
+    key: 'withinContext',
+    value: function withinContext(fn) {
+      var prevContext = ExecutionContext.getCurrentContext();
+      ExecutionContext.__currentContext = this;
+      try {
+        return fn();
+      } finally {
+        ExecutionContext.__currentContext = prevContext;
+      }
+    }
+  }, {
+    key: 'getVariables',
+    value: function getVariables(containerClass) {
+      var initVars = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+      var mapVars = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+      var contextVars = this.variables.get(containerClass);
+      if (!contextVars) {
+        contextVars = {};
+        this.variables.set(containerClass, contextVars);
+      }
+
+      var result = {};
+      for (var k in initVars) {
+        if (mapVars[k] !== undefined) {
+          (0, _invariant2.default)(_utils2.default._isProperty(mapVars[k]), 'You can pass to a mapping only parent variables');
+          result[k] = mapVars[k];
+        } else if (contextVars[k] !== undefined) {
+          result[k] = contextVars[k];
+        } else {
+          contextVars[k] = _utils2.default._createProperty(initVars[k]);
+          result[k] = contextVars[k];
+        }
+      }
+
+      return result;
+    }
+  }, {
+    key: 'trackVariablesChange',
+    value: function trackVariablesChange(prop, vars, valueGenerator) {
+      var _this3 = this;
+
+      var updater = function updater() {
+        _this3.emitCleanup();
+        if (prop.promise) {
+          prop.promise.stop();
+        }
+
+        var nextValue = _this3.withinContext(function () {
+          return valueGenerator(vars);
+        });
+        if (_utils2.default._isCursor(nextValue)) {
+          _this3.trackCursorChange(prop, nextValue);
+          prop.emitChange();
+        } else if (!_utils2.default._isProperty(nextValue)) {
+          prop(nextValue);
+        } else {
+          throw new Error('Next value can\'t be a property');
+        }
+      };
+
+      var varTrackers = (0, _map3.default)(vars, function (val) {
+        return val.addChangeListener(updater);
+      });
+
+      var stopper = this.addCleanupListener(function (isRoot) {
+        if (!isRoot) {
+          varTrackers.forEach(function (stop) {
+            return stop();
+          });
+          stopper();
+        }
+      });
+    }
+  }, {
+    key: 'trackCursorChange',
+    value: function trackCursorChange(prop, cursor) {
+      var _this4 = this;
+
+      if (prop.removeCursorTracker) {
+        prop.removeCursorTracker();
+      }
+
+      var observer = function observer(result) {
+        if (Array.isArray(result)) {
+          result = (0, _map3.default)(result, function (x) {
+            return _utils2.default._createPropertyWithContext(x, _this4);
+          });
+        }
+        prop(result);
+      };
+
+      cursor.on('cursorChanged', this.emitCleanup);
+      prop.promise = cursor.observe(observer);
+      prop.removeCursorTracker = function () {
+        cursor.removeListener('cursorChanged', _this4.emitCleanup);
+        prop.promise.stop();
+      };
+
+      var stopper = this.addCleanupListener(function (isRoot) {
+        if (!isRoot) {
+          prop.removeCursorTracker();
+          stopper();
+        }
+      });
+    }
+  }], [{
+    key: 'getCurrentContext',
+    value: function getCurrentContext() {
+      return ExecutionContext.__currentContext;
+    }
+  }]);
+
+  return ExecutionContext;
+})(_marsdb.EventEmitter);
+},{"./utils":5,"fast.js/map":14,"invariant":19,"marsdb":undefined}],3:[function(require,module,exports){
+'use strict';
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _keys2 = require('fast.js/object/keys');
+
+var _keys3 = _interopRequireDefault(_keys2);
+
+var _forEach = require('fast.js/forEach');
+
+var _forEach2 = _interopRequireDefault(_forEach);
+
+var _map2 = require('fast.js/map');
+
+var _map3 = _interopRequireDefault(_map2);
+
+var _marsdb = require('marsdb');
+
+var _CursorObservable = require('marsdb/dist/CursorObservable');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ *
+ */
+
+var QueryExecutor = (function (_EventEmitter) {
+  _inherits(QueryExecutor, _EventEmitter);
+
+  function QueryExecutor(fragments, initVarsOverride, containerClass) {
+    _classCallCheck(this, QueryExecutor);
+
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(QueryExecutor).call(this));
+
+    _this.containerClass = containerClass;
+    _this.fragmentNames = (0, _keys3.default)(fragments);
+    _this.initVarsOverride = initVarsOverride;
+    _this.context = new ExecutionContext();
+    _this.variables = _this.context.getVariables(containerClass, initVarsOverride);
+    _this._handleDataChanges = (0, _CursorObservable.debounce)(_this._handleDataChanges.bind(_this), 10, 5);
+    return _this;
+  }
+
+  _createClass(QueryExecutor, [{
+    key: 'execute',
+    value: function execute() {
+      var _this2 = this;
+
+      if (!this._execution) {
+        this.result = {};
+        this.context.withinContext(function () {
+          (0, _forEach2.default)(_this2.fragmentNames, function (k) {
+            _this2.result[k] = _this2.containerClass.getFragment(k);
+          });
+        });
+
+        this._stoppers = (0, _map3.default)(this.fragmentNames, function (k) {
+          return _this2.result[k].addChangeListener(_this2._handleDataChanges);
+        });
+
+        this._execution = Promise.resolve();
+        this._handleDataChanges();
+      }
+
+      return this._execution;
+    }
+  }, {
+    key: 'stop',
+    value: function stop() {
+      var _this3 = this;
+
+      invariant(this._execution, 'stop(...): query is not executing');
+
+      this._execution.then(function () {
+        (0, _forEach2.default)(_this3._stoppers, function (stop) {
+          return stop();
+        });
+        _this3.removeAllListeners();
+        _this3.context.emitCleanup();
+        _this3._execution = null;
+      });
+    }
+  }, {
+    key: 'updateVariables',
+    value: function updateVariables(nextProps) {
+      var _this4 = this;
+
+      invariant(this._execution, 'updateVariables(...): query is not executing');
+
+      this._execution.then(function () {
+        (0, _forEach2.default)(nextProps, function (prop, k) {
+          if (_this4.variables[k]) {
+            _this4.variables[k](prop);
+          }
+        });
+      });
+    }
+  }, {
+    key: '_handleDataChanges',
+    value: function _handleDataChanges() {
+      var _this5 = this;
+
+      var nextPromises = (0, _map3.default)(this.fragmentNames, function (k) {
+        return _this5.result[k].promise;
+      });
+      var allPromise = Promise.all(nextPromises).then(function () {
+        if (_this5._execution === allPromise) {
+          _this5.emit('update', _this5.result);
+        }
+      });
+
+      this._execution = allPromise;
+    }
+  }]);
+
+  return QueryExecutor;
+})(_marsdb.EventEmitter);
+},{"fast.js/forEach":9,"fast.js/map":14,"fast.js/object/keys":17,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],4:[function(require,module,exports){
+'use strict';
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = createContainer;
+
+var _map2 = require('fast.js/map');
+
+var _map3 = _interopRequireDefault(_map2);
+
+var _forEach = require('fast.js/forEach');
+
+var _forEach2 = _interopRequireDefault(_forEach);
+
+var _keys2 = require('fast.js/object/keys');
+
+var _keys3 = _interopRequireDefault(_keys2);
+
+var _assign2 = require('fast.js/object/assign');
+
+var _assign3 = _interopRequireDefault(_assign2);
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _invariant = require('invariant');
+
+var _invariant2 = _interopRequireDefault(_invariant);
+
+var _ExecutionContext = require('./ExecutionContext');
+
+var _ExecutionContext2 = _interopRequireDefault(_ExecutionContext);
+
+var _QueryExecutor = require('./QueryExecutor');
+
+var _QueryExecutor2 = _interopRequireDefault(_QueryExecutor);
+
+var _utils = require('./utils');
+
+var _utils2 = _interopRequireDefault(_utils);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+
+/**
+ * High-order container creator
+ * @param  {Component} Component
+ * @param  {Object} options.fragments
+ * @param  {Object} options.initVars
+ * @return {Component}
+ */
+function createContainer(Component, _ref) {
+  var fragments = _ref.fragments;
+  var initialVariables = _ref.initialVariables;
+  var versions = _ref.versions;
+
+  (0, _invariant2.default)((typeof fragments === 'undefined' ? 'undefined' : _typeof(fragments)) === 'object' && (0, _keys3.default)(fragments).length > 0, 'createContainer(...): fragments must be non-empty object');
+
+  var fragmentKeys = (0, _keys3.default)(fragments);
+  var getPropsHash = function getPropsHash(props) {
+    var hash = '';
+    (0, _forEach2.default)(fragmentKeys, function (k) {
+      if (versions && versions[k] && props[k]) {
+        hash += versions[k](props[k]());
+      } else {
+        hash += props[k] && props[k].version;
+      }
+    });
+    return hash;
+  };
+
+  var Container = (function (_React$Component) {
+    _inherits(Container, _React$Component);
+
+    function Container(props, context) {
+      _classCallCheck(this, Container);
+
+      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Container).call(this, props, context));
+
+      _this.prevHash = getPropsHash(props);
+      return _this;
+    }
+
+    _createClass(Container, [{
+      key: 'shouldComponentUpdate',
+      value: function shouldComponentUpdate(nextProps) {
+        var nextHash = getPropsHash(nextProps);
+        var shouldUpdate = nextHash !== this.prevHash;
+        this.prevHash = nextHash;
+        return shouldUpdate;
+      }
+    }, {
+      key: 'render',
+      value: function render() {
+        var variables = this.props[fragmentKeys[0]].context.variables.get(Container);
+        return _react2.default.createElement(Component, _extends({}, this.props, { variables: variables }));
+      }
+    }], [{
+      key: 'getFragment',
+      value: function getFragment(name, mapping) {
+        var initVarsOverride = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+        var parentContext = arguments[3];
+
+        parentContext = parentContext || _ExecutionContext2.default.getCurrentContext();
+        (0, _invariant2.default)(parentContext, 'getFragment(...): must be invoked within some context');
+
+        var childContext = parentContext.createChildContext();
+        var fragment = fragments[name];
+        var initVars = (0, _assign3.default)({}, initialVariables, initVarsOverride);
+        var vars = childContext.getVariables(Container, initVars, mapping);
+
+        (0, _invariant2.default)(typeof fragment === 'function' || (typeof fragment === 'undefined' ? 'undefined' : _typeof(fragment)) === 'object', 'getFragment(...): a fragment must be a function or an object');
+
+        if ((typeof fragment === 'undefined' ? 'undefined' : _typeof(fragment)) === 'object') {
+          return _utils2.default._getJoinFunction(Container, fragment, vars, childContext);
+        } else {
+          return _utils2.default._getFragmentValue(Container, fragment, vars, childContext);
+        }
+      }
+    }, {
+      key: 'getQuery',
+      value: function getQuery(initVarsOverride) {
+        return new _QueryExecutor2.default(fragments, initVarsOverride, Container);
+      }
+    }]);
+
+    return Container;
+  })(_react2.default.Component);
+
+  return Container;
+}
+},{"./ExecutionContext":2,"./QueryExecutor":3,"./utils":5,"fast.js/forEach":9,"fast.js/map":14,"fast.js/object/assign":15,"fast.js/object/keys":17,"invariant":19,"react":undefined}],5:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports._isProperty = _isProperty;
+exports._isCursor = _isCursor;
+exports._getFragmentValue = _getFragmentValue;
+exports._getJoinFunction = _getJoinFunction;
+exports._createProperty = _createProperty;
+exports._createPropertyWithContext = _createPropertyWithContext;
+
+var _map2 = require('fast.js/map');
+
+var _map3 = _interopRequireDefault(_map2);
+
+var _bind2 = require('fast.js/function/bind');
+
+var _bind3 = _interopRequireDefault(_bind2);
+
+var _marsdb = require('marsdb');
+
+var _CursorObservable = require('marsdb/dist/CursorObservable');
+
+var _CursorObservable2 = _interopRequireDefault(_CursorObservable);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+
+// Internals
+var _propertyVersionId = 0;
+var noop = function noop() {};
+
+/**
+ * Return true if given value is a property
+ * @param  {Object}  val
+ * @return {Boolean}
+ */
+function _isProperty(val) {
+  return typeof val === 'function' && !!val.isProperty;
+}
+
+/**
+ * Return true if given value is a CursorObservable
+ * @param  {OBject}  val
+ * @return {Boolean}
+ */
+function _isCursor(val) {
+  return val instanceof _CursorObservable2.default;
+}
+
+/**
+ * Return a property, that updated when value
+ * of fragment changed or variable changed. It do nothing
+ * if generated value is already a property (just returns
+ * the property).
+ *
+ * @param  {Class} containerClass
+ * @param  {Function} valueGenerator
+ * @param  {Object} vars
+ * @param  {ExecutionContext} context
+ * @return {Property}
+ */
+function _getFragmentValue(containerClass, valueGenerator, vars, context) {
+  var value = context.withinContext(function () {
+    return valueGenerator(vars);
+  });
+
+  var prop = undefined;
+  if (_isProperty(value)) {
+    prop = value;
+  } else {
+    prop = _createPropertyWithContext(null, context);
+
+    if (_isCursor(value)) {
+      context.trackCursorChange(prop, value);
+    } else {
+      prop(value);
+    }
+
+    context.trackVariablesChange(prop, vars, valueGenerator);;
+  }
+
+  return prop;
+}
+
+/**
+ * Return a function that join the result to given joinObj.
+ * @param  {Class} containerClass
+ * @param  {Object} joinObj
+ * @param  {Object} vars
+ * @param  {ExecutionContext} context
+ * @return {Function}
+ */
+function _getJoinFunction(containerClass, joinObj, vars, context) {
+  return function () {
+    var doc = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+    var updated = arguments.length <= 1 || arguments[1] === undefined ? noop : arguments[1];
+
+    if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object') {
+      return (0, _map3.default)(joinObj, function (fragment, k) {
+        var valueGenerator = (0, _bind3.default)(fragment, null, doc);
+        var prop = _getFragmentValue(containerClass, valueGenerator, vars, context);
+        doc[k] = prop;
+
+        if (!prop.promise) {
+          (function () {
+            var changeStopper = prop.addChangeListener(updated);
+            var cleanStopper = context.addCleanupListener(function (isRoot) {
+              if (!isRoot) {
+                cleanStopper();
+                changeStopper();
+              }
+            });
+          })();
+        }
+
+        return prop.promise;
+      });
+    }
+  };
+}
+
+/**
+ * Creates a getter-setter property function.
+ * The function returns current value if called without
+ * arguments. If first argument passed then it sets new
+ * value and returns new value.
+ *
+ * On set of a new value it emits a change event. You can
+ * listen on a change event by calling `addChangeListener`
+ * which adds a change event handler that returns a function
+ * for stopping listening.
+ *
+ * A property also have a `version` field. It's a unique value
+ * across all active properties. A version is changed when
+ * property have changed before emitting change event.
+ *
+ * @param  {Mixed} initValue
+ * @return {Property}
+ */
+function _createProperty(initValue) {
+  var emitter = new _marsdb.EventEmitter();
+  emitter.setMaxListeners(Infinity);
+  var store = initValue;
+
+  var prop = function prop() {
+    if (arguments.length > 0) {
+      store = arguments[0];
+      prop.emitChange();
+    }
+    return store;
+  };
+
+  prop.emitChange = function () {
+    prop.version = ++_propertyVersionId;
+    emitter.emit('change');
+  };
+
+  prop.addChangeListener = function (func) {
+    emitter.on('change', func);
+    return function () {
+      emitter.removeListener('change', func);
+    };
+  };
+
+  prop.version = ++_propertyVersionId;
+  prop.isProperty = true;
+  return prop;
+}
+
+/**
+ * Create a property that holds given value and context.
+ * @param  {Mixed} value
+ * @param  {ExecutionContext} context
+ * @return {Property}
+ */
+function _createPropertyWithContext(value, context) {
+  var nextProp = _createProperty(value);
+  nextProp.context = context;
+  return nextProp;
+}
+},{"fast.js/function/bind":12,"fast.js/map":14,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],6:[function(require,module,exports){
+var createContainer = require('./dist/createContainer').default;
+var DataManagerContainer = require('./dist/DataManagerContainer').default;
+
+
+module.exports = {
+  __esModule: true,
+  createContainer: createContainer,
+  DataManagerContainer: DataManagerContainer
+};
+
+},{"./dist/DataManagerContainer":1,"./dist/createContainer":4}],7:[function(require,module,exports){
+'use strict';
+
+var bindInternal3 = require('../function/bindInternal3');
+
+/**
+ * # For Each
+ *
+ * A fast `.forEach()` implementation.
+ *
+ * @param  {Array}    subject     The array (or array-like) to iterate over.
+ * @param  {Function} fn          The visitor function.
+ * @param  {Object}   thisContext The context for the visitor.
+ */
+module.exports = function fastForEach (subject, fn, thisContext) {
+  var length = subject.length,
+      iterator = thisContext !== undefined ? bindInternal3(fn, thisContext) : fn,
+      i;
+  for (i = 0; i < length; i++) {
+    iterator(subject[i], i, subject);
+  }
+};
+
+},{"../function/bindInternal3":13}],8:[function(require,module,exports){
+'use strict';
+
+var bindInternal3 = require('../function/bindInternal3');
+
+/**
+ * # Map
+ *
+ * A fast `.map()` implementation.
+ *
+ * @param  {Array}    subject     The array (or array-like) to map over.
+ * @param  {Function} fn          The mapper function.
+ * @param  {Object}   thisContext The context for the mapper.
+ * @return {Array}                The array containing the results.
+ */
+module.exports = function fastMap (subject, fn, thisContext) {
+  var length = subject.length,
+      result = new Array(length),
+      iterator = thisContext !== undefined ? bindInternal3(fn, thisContext) : fn,
+      i;
+  for (i = 0; i < length; i++) {
+    result[i] = iterator(subject[i], i, subject);
+  }
+  return result;
+};
+
+},{"../function/bindInternal3":13}],9:[function(require,module,exports){
+'use strict';
+
+var forEachArray = require('./array/forEach'),
+    forEachObject = require('./object/forEach');
+
+/**
+ * # ForEach
+ *
+ * A fast `.forEach()` implementation.
+ *
+ * @param  {Array|Object} subject     The array or object to iterate over.
+ * @param  {Function}     fn          The visitor function.
+ * @param  {Object}       thisContext The context for the visitor.
+ */
+module.exports = function fastForEach (subject, fn, thisContext) {
+  if (subject instanceof Array) {
+    return forEachArray(subject, fn, thisContext);
+  }
+  else {
+    return forEachObject(subject, fn, thisContext);
+  }
+};
+},{"./array/forEach":7,"./object/forEach":16}],10:[function(require,module,exports){
+'use strict';
+
+/**
+ * Internal helper for applying a function without a context.
+ */
+module.exports = function applyNoContext (subject, args) {
+  switch (args.length) {
+    case 0:
+      return subject();
+    case 1:
+      return subject(args[0]);
+    case 2:
+      return subject(args[0], args[1]);
+    case 3:
+      return subject(args[0], args[1], args[2]);
+    case 4:
+      return subject(args[0], args[1], args[2], args[3]);
+    case 5:
+      return subject(args[0], args[1], args[2], args[3], args[4]);
+    case 6:
+      return subject(args[0], args[1], args[2], args[3], args[4], args[5]);
+    case 7:
+      return subject(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+    case 8:
+      return subject(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
+    default:
+      return subject.apply(undefined, args);
+  }
+};
+
+},{}],11:[function(require,module,exports){
+'use strict';
+
+/**
+ * Internal helper for applying a function with a context.
+ */
+module.exports = function applyWithContext (subject, thisContext, args) {
+  switch (args.length) {
+    case 0:
+      return subject.call(thisContext);
+    case 1:
+      return subject.call(thisContext, args[0]);
+    case 2:
+      return subject.call(thisContext, args[0], args[1]);
+    case 3:
+      return subject.call(thisContext, args[0], args[1], args[2]);
+    case 4:
+      return subject.call(thisContext, args[0], args[1], args[2], args[3]);
+    case 5:
+      return subject.call(thisContext, args[0], args[1], args[2], args[3], args[4]);
+    case 6:
+      return subject.call(thisContext, args[0], args[1], args[2], args[3], args[4], args[5]);
+    case 7:
+      return subject.call(thisContext, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+    case 8:
+      return subject.call(thisContext, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
+    default:
+      return subject.apply(thisContext, args);
+  }
+};
+
+},{}],12:[function(require,module,exports){
+'use strict';
+
+var applyWithContext = require('./applyWithContext');
+var applyNoContext = require('./applyNoContext');
+
+/**
+ * # Bind
+ * Analogue of `Function::bind()`.
+ *
+ * ```js
+ * var bind = require('fast.js').bind;
+ * var bound = bind(myfunc, this, 1, 2, 3);
+ *
+ * bound(4);
+ * ```
+ *
+ *
+ * @param  {Function} fn          The function which should be bound.
+ * @param  {Object}   thisContext The context to bind the function to.
+ * @param  {mixed}    args, ...   Additional arguments to pre-bind.
+ * @return {Function}             The bound function.
+ */
+module.exports = function fastBind (fn, thisContext) {
+  var boundLength = arguments.length - 2,
+      boundArgs;
+
+  if (boundLength > 0) {
+    boundArgs = new Array(boundLength);
+    for (var i = 0; i < boundLength; i++) {
+      boundArgs[i] = arguments[i + 2];
+    }
+    if (thisContext !== undefined) {
+      return function () {
+        var length = arguments.length,
+            args = new Array(boundLength + length),
+            i;
+        for (i = 0; i < boundLength; i++) {
+          args[i] = boundArgs[i];
+        }
+        for (i = 0; i < length; i++) {
+          args[boundLength + i] = arguments[i];
+        }
+        return applyWithContext(fn, thisContext, args);
+      };
+    }
+    else {
+      return function () {
+        var length = arguments.length,
+            args = new Array(boundLength + length),
+            i;
+        for (i = 0; i < boundLength; i++) {
+          args[i] = boundArgs[i];
+        }
+        for (i = 0; i < length; i++) {
+          args[boundLength + i] = arguments[i];
+        }
+        return applyNoContext(fn, args);
+      };
+    }
+  }
+  if (thisContext !== undefined) {
+    return function () {
+      return applyWithContext(fn, thisContext, arguments);
+    };
+  }
+  else {
+    return function () {
+      return applyNoContext(fn, arguments);
+    };
+  }
+};
+
+},{"./applyNoContext":10,"./applyWithContext":11}],13:[function(require,module,exports){
+'use strict';
+
+/**
+ * Internal helper to bind a function known to have 3 arguments
+ * to a given context.
+ */
+module.exports = function bindInternal3 (func, thisContext) {
+  return function (a, b, c) {
+    return func.call(thisContext, a, b, c);
+  };
+};
+
+},{}],14:[function(require,module,exports){
+'use strict';
+
+var mapArray = require('./array/map'),
+    mapObject = require('./object/map');
+
+/**
+ * # Map
+ *
+ * A fast `.map()` implementation.
+ *
+ * @param  {Array|Object} subject     The array or object to map over.
+ * @param  {Function}     fn          The mapper function.
+ * @param  {Object}       thisContext The context for the mapper.
+ * @return {Array|Object}             The array or object containing the results.
+ */
+module.exports = function fastMap (subject, fn, thisContext) {
+  if (subject instanceof Array) {
+    return mapArray(subject, fn, thisContext);
+  }
+  else {
+    return mapObject(subject, fn, thisContext);
+  }
+};
+},{"./array/map":8,"./object/map":18}],15:[function(require,module,exports){
+'use strict';
+
+/**
+ * Analogue of Object.assign().
+ * Copies properties from one or more source objects to
+ * a target object. Existing keys on the target object will be overwritten.
+ *
+ * > Note: This differs from spec in some important ways:
+ * > 1. Will throw if passed non-objects, including `undefined` or `null` values.
+ * > 2. Does not support the curious Exception handling behavior, exceptions are thrown immediately.
+ * > For more details, see:
+ * > https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
+ *
+ *
+ *
+ * @param  {Object} target      The target object to copy properties to.
+ * @param  {Object} source, ... The source(s) to copy properties from.
+ * @return {Object}             The updated target object.
+ */
+module.exports = function fastAssign (target) {
+  var totalArgs = arguments.length,
+      source, i, totalKeys, keys, key, j;
+
+  for (i = 1; i < totalArgs; i++) {
+    source = arguments[i];
+    keys = Object.keys(source);
+    totalKeys = keys.length;
+    for (j = 0; j < totalKeys; j++) {
+      key = keys[j];
+      target[key] = source[key];
+    }
+  }
+  return target;
+};
+
+},{}],16:[function(require,module,exports){
+'use strict';
+
+var bindInternal3 = require('../function/bindInternal3');
+
+/**
+ * # For Each
+ *
+ * A fast object `.forEach()` implementation.
+ *
+ * @param  {Object}   subject     The object to iterate over.
+ * @param  {Function} fn          The visitor function.
+ * @param  {Object}   thisContext The context for the visitor.
+ */
+module.exports = function fastForEachObject (subject, fn, thisContext) {
+  var keys = Object.keys(subject),
+      length = keys.length,
+      iterator = thisContext !== undefined ? bindInternal3(fn, thisContext) : fn,
+      key, i;
+  for (i = 0; i < length; i++) {
+    key = keys[i];
+    iterator(subject[key], key, subject);
+  }
+};
+
+},{"../function/bindInternal3":13}],17:[function(require,module,exports){
+'use strict';
+
+/**
+ * Object.keys() shim for ES3 environments.
+ *
+ * @param  {Object} obj The object to get keys for.
+ * @return {Array}      The array of keys.
+ */
+module.exports = typeof Object.keys === "function" ? Object.keys : /* istanbul ignore next */ function fastKeys (obj) {
+  var keys = [];
+  for (var key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      keys.push(key);
+    }
+  }
+  return keys;
+};
+},{}],18:[function(require,module,exports){
+'use strict';
+
+var bindInternal3 = require('../function/bindInternal3');
+
+/**
+ * # Map
+ *
+ * A fast object `.map()` implementation.
+ *
+ * @param  {Object}   subject     The object to map over.
+ * @param  {Function} fn          The mapper function.
+ * @param  {Object}   thisContext The context for the mapper.
+ * @return {Object}               The new object containing the results.
+ */
+module.exports = function fastMapObject (subject, fn, thisContext) {
+  var keys = Object.keys(subject),
+      length = keys.length,
+      result = {},
+      iterator = thisContext !== undefined ? bindInternal3(fn, thisContext) : fn,
+      i, key;
+  for (i = 0; i < length; i++) {
+    key = keys[i];
+    result[key] = iterator(subject[key], key, subject);
+  }
+  return result;
+};
+
+},{"../function/bindInternal3":13}],19:[function(require,module,exports){
+/**
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+'use strict';
+
+/**
+ * Use invariant() to assert state which your program assumes to be true.
+ *
+ * Provide sprintf-style format (only %s is supported) and arguments
+ * to provide information about what broke and what you were
+ * expecting.
+ *
+ * The invariant message will be stripped in production, but the invariant
+ * will remain to ensure logic does not differ in production.
+ */
+
+var invariant = function(condition, format, a, b, c, d, e, f) {
+  if ("production" !== 'production') {
+    if (format === undefined) {
+      throw new Error('invariant requires an error message argument');
+    }
+  }
+
+  if (!condition) {
+    var error;
+    if (format === undefined) {
+      error = new Error(
+        'Minified exception occurred; use the non-minified dev environment ' +
+        'for the full error message and additional helpful warnings.'
+      );
+    } else {
+      var args = [a, b, c, d, e, f];
+      var argIndex = 0;
+      error = new Error(
+        format.replace(/%s/g, function() { return args[argIndex++]; })
+      );
+      error.name = 'Invariant Violation';
+    }
+
+    error.framesToPop = 1; // we don't care about invariant's own frame
+    throw error;
+  }
+};
+
+module.exports = invariant;
+
+},{}]},{},[6])(6)
+});

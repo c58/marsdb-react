@@ -72,6 +72,7 @@ gulp.task('build:browser', ['build:node'], function() {
 
   return browserify(customOpts)
     .exclude('marsdb')
+    .exclude('marsdb/dist/CursorObservable')
     .exclude('react')
     .bundle()
     .pipe(source(config.browser.bundleName))
