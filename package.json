@@ -22,10 +22,11 @@
   },
   "dependencies": {
     "core-js": "^2.0.0",
-    "react": "^0.14.5",
-    "marsdb": "^0.4.2",
+    "fast.js": "^0.1.1",
     "invariant": "^2.2.0",
-    "keymirror": "^0.1.1"
+    "keymirror": "^0.1.1",
+    "marsdb": "^0.4.3",
+    "react": "^0.14.5"
   },
   "devDependencies": {
     "babel-cli": "^6.3.17",
@@ -55,6 +56,8 @@
     "mocha-phantomjs": "^4.0.2",
     "require-dir": "^0.3.0",
     "run-sequence": "^1.1.5",
+    "sinon": "^1.17.2",
+    "sinon-chai": "^2.8.0",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
   },
