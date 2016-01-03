@@ -1,6 +1,7 @@
-import { CursorObservable } from 'marsdb';
+import Collection, { CursorObservable } from 'marsdb';
 import Cursor from 'marsdb/dist/Cursor';
 import * as utils from '../../lib/utils';
+import ExecutionContext from '../../lib/ExecutionContext';
 import chai, {expect} from 'chai';
 import sinon from 'sinon';
 chai.use(require('chai-as-promised'));
@@ -97,7 +98,89 @@ describe('Utils', function () {
   });
 
   describe('#_getFragmentValue', function () {
+    it('should do nothing if valueGenerator return a property', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {testVar: 123});
+      const prop = utils._createProperty('val');
+      const valGen = () => prop;
+      const res = utils._getFragmentValue(ContainerClass, valGen, vars, context);
+      const cb = sinon.spy();
+      const stopListen = res.addChangeListener(cb);
 
+      res.should.be.equal(prop);
+      vars.testVar();
+      cb.should.have.been.callCount(0);
+      vars.testVar('next val');
+      cb.should.have.been.callCount(0);
+      prop('next val');
+      cb.should.have.been.callCount(1);
+    });
+
+    it('should track variable changes when valueGenerator returns not a cursor', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {testVar: 123});
+      let val = 10;
+      const valGen = () => val++;
+      const res = utils._getFragmentValue(ContainerClass, valGen, vars, context);
+      const cb = sinon.spy();
+      const stopListen = res.addChangeListener(cb);
+
+      res().should.be.equal(10);
+      res().should.be.equal(10);
+      vars.testVar();
+      cb.should.have.been.callCount(0);
+      vars.testVar('next val');
+      cb.should.have.been.callCount(1);
+      res().should.be.equal(11);
+    });
+
+    it('should track variable changes and cursor changes when valueGenerator returns cursor', function () {
+      class ContainerClass {}
+      const db = new Collection('test');
+      return db.insert({a: 1, _id: '1'}).then(() => {
+        const context = new ExecutionContext();
+        const vars = context.getVariables(ContainerClass, {gtVal: 0});
+        const valGen = ({gtVal}) => db.find({a: {$gt: gtVal()}}).debounce(0).batchSize(0);
+        const res = utils._getFragmentValue(ContainerClass, valGen, vars, context);
+        const cb = sinon.spy();
+        const stopListen = res.addChangeListener(cb);
+
+        expect(res()).to.be.null;
+        let oldPromise = res.promise;
+
+        return oldPromise.then(() => {
+          res().should.have.length(1);
+          res()[0]().should.be.deep.equal({a: 1, _id: '1'});
+          cb.should.have.been.callCount(1);
+          vars.gtVal().should.be.equal(0);
+          cb.should.have.been.callCount(1);
+          oldPromise.should.be.equal(res.promise);
+          vars.gtVal(1).should.be.equal(1);
+          cb.should.have.been.callCount(1);
+          oldPromise.should.not.be.equal(res.promise);
+          res().should.have.length(1);
+          res()[0]().should.be.deep.equal({a: 1, _id: '1'});
+          oldPromise = res.promise;
+          return oldPromise;
+        })
+        .then(() => {
+          cb.should.have.been.callCount(2);
+          res().should.have.length(0);
+          return Promise.all([
+            db.insert({a: 2, _id: '2'}),
+            new Promise((resolve, reject) => {
+              res.addChangeListener(() => {
+                res().should.have.length(1);
+                res()[0]().should.be.deep.equal({a: 2, _id: '2'});
+                resolve();
+              });
+            }),
+          ]);
+        })
+      })
+    });
   });
 
   describe('#_getJoinFunction', function () {
