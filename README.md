@@ -5,7 +5,7 @@ MarsDB-React
 [![npm version](https://badge.fury.io/js/marsdb-react.svg)](https://www.npmjs.com/package/marsdb-react)
 [![Dependency Status](https://david-dm.org/c58/marsdb-react.svg)](https://david-dm.org/c58/marsdb-react)
 
-Declarative data-binding for React based on [MarsDB](https://github.com/c58/marsdb), inspired by Relay.
+Declarative data-binding for React based on [MarsDB](https://github.com/c58/marsdb), inspired by [Relay](https://github.com/facebook/relay), [Redux](https://github.com/rackt/redux), [Flux](https://facebook.github.io/flux/) and [Mithril](https://github.com/lhorie/mithril.js/).
 
 ## Contributing
 I’m waiting for your pull requests and issues.
