@@ -278,5 +278,9 @@ describe('Utils', function () {
       })
     });
 
+    it('should join only non-existing fields in a doc', function () {
+      // TODO
+    });
   });
+
 });
