@@ -184,6 +184,99 @@ describe('Utils', function () {
   });
 
   describe('#_getJoinFunction', function () {
+    it('should update when joined prop updated and cleanup on context destroy', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {testVar: 123});
+      const prop = utils._createProperty('val');
+      const joinObj = { test: () => prop };
+      const joinFn = utils._getJoinFunction(ContainerClass, joinObj, vars, context);
+
+      const res = {};
+      const cb = sinon.spy();
+      const joinRes = joinFn(res, cb);
+      utils._isProperty(res.test).should.be.true;
+      res.test().should.be.equal('val');
+
+      return Promise.all(joinRes).then(() => {
+        prop('val1');
+        cb.should.have.been.callCount(1);
+        res.test().should.be.equal('val1');
+
+        context.emitCleanup(false);
+        prop('val2');
+        cb.should.have.been.callCount(1);
+        res.test().should.be.equal('val2');
+      });
+    });
+
+    it('should update a parent observer on variable change', function () {
+      class ContainerClass {}
+      const db = new Collection('test');
+      const system = new Collection('system');
+      return Promise.all([
+        db.insert({a: 1, _id: '1'}),
+        system.insert({field: 'value'}),
+      ]).then(() => {
+        class ContainerClass {}
+        const context = new ExecutionContext();
+        const vars = context.getVariables(ContainerClass, {gtVal: 0});
+        const prop = utils._createProperty('val');
+        const joinObj = { test: (doc, {gtVal}) => db.find({a: {$gt: gtVal()}}).debounce(0).batchSize(0) };
+        const joinFn = utils._getJoinFunction(ContainerClass, joinObj, vars, context);
+
+        return new Promise((resolve, reject) => {
+          let calls = 0;
+          system.findOne().join(joinFn).debounce(0).batchSize(0).observe((doc) => {
+            if (calls === 0) {
+              calls++;
+              utils._isProperty(doc.test).should.be.true;
+              doc.test().should.have.length(1);
+              vars.gtVal(1);
+            } else {
+              utils._isProperty(doc.test).should.be.true;
+              doc.test().should.have.length(0);
+              resolve();
+            }
+          });
+        });
+      })
+    });
+
+    it('should update parent observer once when joined cursor changed', function () {
+      class ContainerClass {}
+      const db = new Collection('test');
+      const system = new Collection('system');
+      return Promise.all([
+        db.insert({a: 1, _id: '1'}),
+        system.insert({field: 'value'}),
+      ]).then(() => {
+        class ContainerClass {}
+        const context = new ExecutionContext();
+        const vars = context.getVariables(ContainerClass, {gtVal: 0});
+        const prop = utils._createProperty('val');
+        const joinObj = { test: (doc, {gtVal}) => db.find({a: {$gt: gtVal()}}).debounce(0).batchSize(0) };
+        const joinFn = utils._getJoinFunction(ContainerClass, joinObj, vars, context);
+
+        return new Promise((resolve, reject) => {
+          let calls = 0;
+          system.findOne().join(joinFn).debounce(0).batchSize(0).observe((doc) => {
+            if (calls === 0) {
+              calls++;
+              utils._isProperty(doc.test).should.be.true;
+              doc.test().should.have.length(1);
+              db.insert({a: 2, _id: '2'});
+            } else if (calls === 1) {
+              utils._isProperty(doc.test).should.be.true;
+              doc.test().should.have.length(2);
+              setTimeout(resolve, 100);
+            } else {
+              reject();
+            }
+          });
+        });
+      })
+    });
 
   });
 });
