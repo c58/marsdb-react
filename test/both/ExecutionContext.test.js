@@ -282,7 +282,25 @@ describe('ExecutionContext', function () {
   });
 
   describe('#trackCursorChange', function () {
+    it('should add an observer to cursor and set property when done', function () {
 
+    });
+
+    it('should wrap all items in array with property', function () {
+
+    });
+
+    it('should update property when cursor updated', function () {
+
+    });
+
+    it('should remove observer when context destroyed', function () {
+
+    });
+
+    it('should remove previous cursor observer of the property', function () {
+
+    });
   });
 
 });
