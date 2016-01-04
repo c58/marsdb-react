@@ -154,20 +154,131 @@ describe('ExecutionContext', function () {
 
   describe('#getVariables', function () {
     it('should initiate variables in context for non-existing class', function () {
-
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      expect(context.variables.get(ContainerClass)).to.be.undefined;
+      const vars = context.getVariables(ContainerClass);
+      expect(context.variables.get(ContainerClass)).to.be.equal(vars);
     });
 
     it('should accept only properties in variables mapping', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
 
+      (function() {
+        context.getVariables(ContainerClass, {test: 1}, {test: 2});
+      }).should.throw(Error);
+
+      const prop = utils._createProperty('val');
+      const res = context.getVariables(ContainerClass, {test: 1}, {test: prop});
+      res.test.should.be.equal(prop);
+      res.test().should.be.equal('val');
     });
 
-    it('should', function () {
+    it('should set mapping value in non-existing variable field', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const prop1 = utils._createProperty('val1');
+      const prop2 = utils._createProperty('val2');
 
+      context.getVariables(ContainerClass, {test: 1}, {test: prop1});
+      let res = context.getVariables(ContainerClass, {test: 1}, {test: prop2});
+      res.test.should.be.equal(prop1);
+
+      res = context.getVariables(ContainerClass, {test: 1, test2: 2}, {test2: prop2});
+      res.test.should.be.equal(prop1);
+      res.test2.should.be.equal(prop2);
+    });
+
+    it('should create property with initial value if no mapping provided', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const prop1 = utils._createProperty('val1');
+
+      let res = context.getVariables(ContainerClass, {test: 1, test2: 2}, {test: prop1});
+      res.test.should.be.equal(prop1);
+      res.test2().should.be.equal(2);
     });
   });
 
   describe('#trackVariablesChange', function () {
+    it('should regenerate value on variable change', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 1});
+      const prop = utils._createProperty('val1');
+      const valGen = () => 2;
 
+      context.trackVariablesChange(prop, vars, valGen);
+      prop().should.be.equal('val1');
+      vars.test(2);
+      prop().should.be.equal(2);
+    });
+
+    it('should stop previous observer and create new one on variable change', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 0});
+      const prop = utils._createProperty('val1');
+      const db = new Collection('test');
+      const system = new Collection('system');
+      const valGen = ({test}) => db.find({a: {$gt: test()}}).debounce(0);
+      const cb = sinon.spy();
+
+      return Promise.all([
+        db.insert({a: 1, _id: '1'}),
+        system.insert({field: 'value'}),
+      ]).then(() => {
+        context.trackCursorChange(prop, valGen(vars));
+        return prop.promise;
+      }).then(() => {
+        context.trackVariablesChange(prop, vars, valGen);
+        prop().should.have.length(1);
+        utils._isProperty(prop()[0]).should.be.true;
+        prop.promise.stop = cb;
+        vars.test(1);
+        // TODO make it to be called once
+        cb.should.have.been.callCount(2);
+        return prop.promise;
+      }).then(() => {
+        prop().should.have.length(0);
+      });
+    });
+
+    it('should stop variables tracking on context cleanup', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 1});
+      const prop = utils._createProperty('val1');
+      const valGen = () => 2;
+
+      context.trackVariablesChange(prop, vars, valGen);
+      prop().should.be.equal('val1');
+      vars.test(2);
+      prop().should.be.equal(2);
+
+      context.emitCleanup();
+      prop(0);
+      vars.test(2);
+      prop().should.be.equal(2);
+
+      context.emitCleanup(false);
+      prop(0);
+      vars.test(2);
+      prop().should.be.equal(0);
+    });
+
+    it('should rise an exception if generated value is a property', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 1});
+      const prop = utils._createProperty('val1');
+      const valGen = () => prop;
+
+      context.trackVariablesChange(prop, vars, valGen);
+      prop().should.be.equal('val1');
+      (() => vars.test(2)).should.throw(Error);
+    });
   });
 
   describe('#trackCursorChange', function () {
