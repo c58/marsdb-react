@@ -39,7 +39,19 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 /**
+ * By given frgments object, varialbes and containerClass
+ * creates a query executor.
+ * It will execute each fragment of fragments object and
+ * return a promise, that will be resolved when all fragments
+ * is filled with data.
  *
+ * Container class is an object with one static function – `getFragment`,
+ * that must return a property function. By all properties constructed
+ * a Promise that resolved when all `prop.promise` resolved.
+ *
+ * The class extends `EventEmitter`.Only one event may be emitted – `update`.
+ * The event emitted when query data is updated. With event is arrived an object
+ * of proprties for each fragment.
  */
 
 var QueryExecutor = (function (_EventEmitter) {
@@ -59,6 +71,14 @@ var QueryExecutor = (function (_EventEmitter) {
     return _this;
   }
 
+  /**
+   * Execute the query and return a Promise, that resolved
+   * when all props will be filled with data.
+   * If query already executing it just returns a promise
+   * for currently executing query.
+   * @return {Promise}
+   */
+
   _createClass(QueryExecutor, [{
     key: 'execute',
     value: function execute() {
@@ -77,11 +97,16 @@ var QueryExecutor = (function (_EventEmitter) {
         });
 
         this._execution = Promise.resolve();
-        this._handleDataChanges();
+        this._doHandleDataChanges();
       }
 
       return this._execution;
     }
+
+    /**
+     * Stops query executing and listening for changes.
+     */
+
   }, {
     key: 'stop',
     value: function stop() {
@@ -98,6 +123,15 @@ var QueryExecutor = (function (_EventEmitter) {
         _this3._execution = null;
       });
     }
+
+    /**
+     * Update top level variables of the query by setting
+     * values in variable props from given object. If field
+     * exists in a given object and not exists in variables map
+     * then it will be ignored.
+     * @param  {Object} nextProps
+     */
+
   }, {
     key: 'updateVariables',
     value: function updateVariables(nextProps) {
@@ -113,9 +147,25 @@ var QueryExecutor = (function (_EventEmitter) {
         });
       });
     }
+
+    /**
+     * DEBOUNCED version of `_doHandleDataChanges` (in constructor)
+     */
+
   }, {
     key: '_handleDataChanges',
     value: function _handleDataChanges() {
+      this._doHandleDataChanges();
+    }
+
+    /**
+     * The method is invoked when some of fragment's property is updated.
+     * It emits an `update` event only when all `prop.promise` is resolved.
+     */
+
+  }, {
+    key: '_doHandleDataChanges',
+    value: function _doHandleDataChanges() {
       var _this5 = this;
 
       var nextPromises = (0, _map3.default)(this.fragmentNames, function (k) {
