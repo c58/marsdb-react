@@ -282,24 +282,149 @@ describe('ExecutionContext', function () {
   });
 
   describe('#trackCursorChange', function () {
-    it('should add an observer to cursor and set property when done', function () {
+    it('should add an observer to a cursor and set property when done', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 0});
+      const prop = utils._createProperty('val1');
+      const db = new Collection('test');
+      const system = new Collection('system');
+      const valGen = ({test}) => db.find({a: {$gt: test()}}).debounce(0);
+      const cb = sinon.spy();
 
+      return Promise.all([
+        db.insert({a: 1, _id: '1'}),
+        system.insert({field: 'value'}),
+      ]).then(() => {
+        context.trackCursorChange(prop, valGen(vars));
+        return prop.promise;
+      }).then(() => {
+        prop().should.have.length(1);
+        utils._isProperty(prop()[0]).should.be.true;
+        prop()[0]().should.be.deep.equal({a: 1, _id: '1'});
+      })
     });
 
     it('should wrap all items in array with property', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 0});
+      const prop = utils._createProperty('val1');
+      const db = new Collection('test');
+      const system = new Collection('system');
+      const valGen = ({test}) => db.find({a: {$gt: test()}}).debounce(0);
+      const valGenOne = ({test}) => db.findOne({a: {$gt: test()}}).debounce(0);
+      const cb = sinon.spy();
 
+      return Promise.all([
+        db.insert({a: 1, _id: '1'}),
+        db.insert({a: 2, _id: '2'}),
+        db.insert({a: 3, _id: '3'}),
+        system.insert({field: 'value'}),
+      ]).then(() => {
+        context.trackCursorChange(prop, valGen(vars));
+        return prop.promise;
+      }).then(() => {
+        prop().should.have.length(3);
+        utils._isProperty(prop()[0]).should.be.true;
+        utils._isProperty(prop()[1]).should.be.true;
+        utils._isProperty(prop()[2]).should.be.true;
+        prop()[0]().should.be.deep.equal({a: 1, _id: '1'});
+        prop()[1]().should.be.deep.equal({a: 2, _id: '2'});
+        prop()[2]().should.be.deep.equal({a: 3, _id: '3'});
+
+        context.trackCursorChange(prop, valGenOne(vars));
+        return prop.promise;
+      }).then(() => {
+        prop().should.be.deep.equal({a: 1, _id: '1'});
+      })
     });
 
     it('should update property when cursor updated', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 0});
+      const prop = utils._createProperty('val1');
+      const db = new Collection('test');
+      const system = new Collection('system');
+      const valGen = ({test}) => db.find({a: {$gt: test()}}).debounce(0);
+      const cb = sinon.spy();
 
+      return Promise.all([
+        db.insert({a: 1, _id: '1'}),
+        system.insert({field: 'value'}),
+      ]).then(() => {
+        context.trackCursorChange(prop, valGen(vars));
+        return prop.promise;
+      }).then(() => {
+        prop().should.have.length(1);
+        return db.insert({a: 2, _id: '2'});
+      }).then(() => {
+        return new Promise((resolve, reject) => {
+          prop.addChangeListener(() => {
+            prop().should.have.length(2);
+            resolve();
+          })
+        });
+      });
     });
 
     it('should remove observer when context destroyed', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 0});
+      const prop = utils._createProperty('val1');
+      const db = new Collection('test');
+      const system = new Collection('system');
+      const valGen = ({test}) => db.find({a: {$gt: test()}}).debounce(0);
+      const cb = sinon.spy();
 
+      return Promise.all([
+        db.insert({a: 1, _id: '1'}),
+        system.insert({field: 'value'}),
+      ]).then(() => {
+        context.trackCursorChange(prop, valGen(vars));
+        return prop.promise;
+      }).then(() => {
+        prop().should.have.length(1);
+        context.emitCleanup();
+        return db.insert({a: 2, _id: '2'});
+      }).then(() => {
+        return new Promise((resolve, reject) => {
+          prop.addChangeListener(() => {
+            prop().should.have.length(2);
+            resolve();
+          })
+        });
+      }).then(() => {
+        context.emitCleanup(false);
+        return db.insert({a: 3, _id: '3'});
+      }).then(() => {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            prop().should.have.length(2);
+            resolve();
+          }, 100);
+        });
+      });
     });
 
     it('should remove previous cursor observer of the property', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {test: 0});
+      const prop = utils._createProperty('val1');
+      const db = new Collection('test');
+      const system = new Collection('system');
+      const valGen = ({test}) => db.find({a: {$gt: test()}}).debounce(0);
+      const cb = sinon.spy();
 
+      context.trackCursorChange(prop, valGen(vars));
+      const promise = prop.promise;
+      promise.stop = cb;
+      context.trackCursorChange(prop, valGen(vars));
+      cb.should.have.been.callCount(1);
+      promise.should.be.not.equal(prop.promise);
     });
   });
 
