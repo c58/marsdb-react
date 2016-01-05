@@ -255,7 +255,7 @@ describe('Utils', function () {
         const context = new ExecutionContext();
         const vars = context.getVariables(ContainerClass, {gtVal: 0});
         const prop = utils._createProperty('val');
-        const joinObj = { test: (doc, {gtVal}) => db.find({a: {$gt: gtVal()}}).debounce(0).batchSize(0) };
+        const joinObj = { test: (doc, {gtVal}) => db.find({a: {$gt: gtVal()}}).debounce(0) };
         const joinFn = utils._getJoinFunction(ContainerClass, joinObj, vars, context);
 
         return new Promise((resolve, reject) => {
@@ -278,8 +278,58 @@ describe('Utils', function () {
       })
     });
 
+    it('should ignore non-object documents', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {gtVal: 0});
+      const prop = utils._createProperty('val');
+      const joinObj = { test: (doc, {gtVal}) => db.find({a: {$gt: gtVal()}}).debounce(0) };
+      const joinFn = utils._getJoinFunction(ContainerClass, joinObj, vars, context);
+
+      expect(joinFn(undefined)).to.be.undefined;
+      expect(joinFn(null)).to.be.undefined;
+      expect(joinFn('something')).to.be.undefined;
+      expect(joinFn(10)).to.be.undefined;
+    });
+
     it('should join only non-existing fields in a doc', function () {
-      // TODO
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {gtVal: 0});
+      const prop = utils._createProperty('val');
+      const joinObj = { test: () => 2 };
+      const joinFn = utils._getJoinFunction(ContainerClass, joinObj, vars, context);
+
+      let doc = {test: 3};
+      joinFn(doc);
+      doc.should.be.deep.equal({test: 3});
+
+      doc = {test1: 0};
+      joinFn(doc);
+      doc.test().should.be.deep.equal(2);
+
+      doc = {test: null};
+      joinFn(doc);
+      doc.should.be.deep.equal({test: null});
+
+      doc = {test: 0};
+      joinFn(doc);
+      doc.should.be.deep.equal({test: 0});
+
+      doc = {test: undefined};
+      joinFn(doc);
+      doc.test().should.be.deep.equal(2);
+    });
+
+    it('should use noop updater function if not provided to joinFn', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      const vars = context.getVariables(ContainerClass, {gtVal: 0});
+      const prop = utils._createProperty('val');
+      const joinObj = { test: () => 2 };
+      const joinFn = utils._getJoinFunction(ContainerClass, joinObj, vars, context);
+      joinFn({});
+      vars.gtVal(1);
     });
   });
 
