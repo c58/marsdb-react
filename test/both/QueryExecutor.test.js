@@ -25,4 +25,8 @@ describe('QueryExecutor', function () {
   describe('#_handleDataChanges', function () {
 
   });
+
+  describe('#_doHandleDataChanges', function () {
+
+  });
 });
