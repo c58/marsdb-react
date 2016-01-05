@@ -14,9 +14,9 @@ var _map2 = require('fast.js/map');
 
 var _map3 = _interopRequireDefault(_map2);
 
-var _bind2 = require('fast.js/function/bind');
+var _keys2 = require('fast.js/object/keys');
 
-var _bind3 = _interopRequireDefault(_bind2);
+var _keys3 = _interopRequireDefault(_keys2);
 
 var _marsdb = require('marsdb');
 
@@ -30,7 +30,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
 // Internals
 var _propertyVersionId = 0;
-var noop = function noop() {};
+var noop = function noop() {}; // eslint-disable-line
 
 /**
  * Return true if given value is a property
@@ -79,14 +79,14 @@ function _getFragmentValue(containerClass, valueGenerator, vars, context) {
       prop(value);
     }
 
-    context.trackVariablesChange(prop, vars, valueGenerator);;
+    context.trackVariablesChange(prop, vars, valueGenerator);
   }
 
   return prop;
 }
 
 /**
- * Return a function that join the result to given joinObj.
+ * Return a function that join the result of given joinObj.
  * @param  {Class} containerClass
  * @param  {Object} joinObj
  * @param  {Object} vars
@@ -94,29 +94,37 @@ function _getFragmentValue(containerClass, valueGenerator, vars, context) {
  * @return {Function}
  */
 function _getJoinFunction(containerClass, joinObj, vars, context) {
-  return function () {
-    var doc = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+  var joinObjKeys = (0, _keys3.default)(joinObj);
+
+  return function (doc) {
     var updated = arguments.length <= 1 || arguments[1] === undefined ? noop : arguments[1];
 
-    if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object') {
-      return (0, _map3.default)(joinObj, function (fragment, k) {
-        var valueGenerator = (0, _bind3.default)(fragment, null, doc);
-        var prop = _getFragmentValue(containerClass, valueGenerator, vars, context);
-        doc[k] = prop;
+    if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object' && doc !== null) {
+      return (0, _map3.default)(joinObjKeys, function (k) {
+        if (doc[k] === undefined) {
+          var _ret = (function () {
+            var valueGenerator = function valueGenerator(opts) {
+              return joinObj[k](doc, opts);
+            };
+            var prop = _getFragmentValue(containerClass, valueGenerator, vars, context);
+            doc[k] = prop;
 
-        if (!prop.promise) {
-          (function () {
-            var changeStopper = prop.addChangeListener(updated);
-            var cleanStopper = context.addCleanupListener(function (isRoot) {
-              if (!isRoot) {
-                cleanStopper();
-                changeStopper();
-              }
-            });
+            return {
+              v: Promise.resolve(prop.promise).then(function (res) {
+                var changeStopper = prop.addChangeListener(updated);
+                var cleanStopper = context.addCleanupListener(function (isRoot) {
+                  if (!isRoot) {
+                    cleanStopper();
+                    changeStopper();
+                  }
+                });
+                return res;
+              })
+            };
           })();
-        }
 
-        return prop.promise;
+          if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+        }
       });
     }
   };

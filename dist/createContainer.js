@@ -101,7 +101,7 @@ function createContainer(Component, _ref) {
     }, {
       key: 'render',
       value: function render() {
-        var variables = this.props[fragmentKeys[0]].context.variables.get(Container);
+        var variables = this.props[fragmentKeys[0]].context.getVariables(Container);
         return _react2.default.createElement(Component, _extends({}, this.props, { variables: variables }));
       }
     }], [{

@@ -67,7 +67,7 @@ var DataManagerContainer = (function (_React$Component) {
   }, {
     key: 'render',
     value: function render() {
-      var Component = this.props.component;
+      var Component = this.props.component; // eslint-disable-line
       return this._resolved ? _react2.default.createElement(Component, this.state.result) : null;
     }
   }]);

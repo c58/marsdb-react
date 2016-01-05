@@ -22,6 +22,14 @@ var _marsdb = require('marsdb');
 
 var _CursorObservable = require('marsdb/dist/CursorObservable');
 
+var _invariant = require('invariant');
+
+var _invariant2 = _interopRequireDefault(_invariant);
+
+var _ExecutionContext = require('./ExecutionContext');
+
+var _ExecutionContext2 = _interopRequireDefault(_ExecutionContext);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -45,9 +53,9 @@ var QueryExecutor = (function (_EventEmitter) {
     _this.containerClass = containerClass;
     _this.fragmentNames = (0, _keys3.default)(fragments);
     _this.initVarsOverride = initVarsOverride;
-    _this.context = new ExecutionContext();
+    _this.context = new _ExecutionContext2.default();
     _this.variables = _this.context.getVariables(containerClass, initVarsOverride);
-    _this._handleDataChanges = (0, _CursorObservable.debounce)(_this._handleDataChanges.bind(_this), 10, 5);
+    _this._handleDataChanges = (0, _CursorObservable.debounce)(_this._handleDataChanges.bind(_this), 1000 / 60, 5);
     return _this;
   }
 
@@ -79,7 +87,7 @@ var QueryExecutor = (function (_EventEmitter) {
     value: function stop() {
       var _this3 = this;
 
-      invariant(this._execution, 'stop(...): query is not executing');
+      (0, _invariant2.default)(this._execution, 'stop(...): query is not executing');
 
       this._execution.then(function () {
         (0, _forEach2.default)(_this3._stoppers, function (stop) {
@@ -95,7 +103,7 @@ var QueryExecutor = (function (_EventEmitter) {
     value: function updateVariables(nextProps) {
       var _this4 = this;
 
-      invariant(this._execution, 'updateVariables(...): query is not executing');
+      (0, _invariant2.default)(this._execution, 'updateVariables(...): query is not executing');
 
       this._execution.then(function () {
         (0, _forEach2.default)(nextProps, function (prop, k) {

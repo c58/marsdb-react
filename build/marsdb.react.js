@@ -68,7 +68,7 @@ var DataManagerContainer = (function (_React$Component) {
   }, {
     key: 'render',
     value: function render() {
-      var Component = this.props.component;
+      var Component = this.props.component; // eslint-disable-line
       return this._resolved ? _react2.default.createElement(Component, this.state.result) : null;
     }
   }]);
@@ -82,9 +82,21 @@ exports.default = DataManagerContainer;
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _forEach = require('fast.js/forEach');
+
+var _forEach2 = _interopRequireDefault(_forEach);
+
 var _map2 = require('fast.js/map');
 
 var _map3 = _interopRequireDefault(_map2);
+
+var _keys2 = require('fast.js/object/keys');
+
+var _keys3 = _interopRequireDefault(_keys2);
 
 var _marsdb = require('marsdb');
 
@@ -94,7 +106,9 @@ var _invariant2 = _interopRequireDefault(_invariant);
 
 var _utils = require('./utils');
 
-var _utils2 = _interopRequireDefault(_utils);
+var utils = _interopRequireWildcard(_utils);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -105,7 +119,11 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 /**
- *
+ * ExecutionContext is used to track changes of variables
+ * and cursors and cleanup listeners on parent cursor changes.
+ * It also provides a method to run a function "in context":
+ * while function running, `ExecutionContext.getCurrentContext()`
+ * returning the context.
  */
 
 var ExecutionContext = (function (_EventEmitter) {
@@ -124,6 +142,13 @@ var ExecutionContext = (function (_EventEmitter) {
     return _this;
   }
 
+  /**
+   * Adds a cleanup event listener and return a funtion
+   * for removing listener.
+   * @param {Function} fn
+   * @return {Function}
+   */
+
   _createClass(ExecutionContext, [{
     key: 'addCleanupListener',
     value: function addCleanupListener(fn) {
@@ -134,6 +159,14 @@ var ExecutionContext = (function (_EventEmitter) {
         return _this2.removeListener('cleanup', fn);
       };
     }
+
+    /**
+     * Emits cleanup event. Given argument indicates the source
+     * of the event. If it is `false`, then the event will be
+     * interprated as "went from upper context".
+     * @param  {Boolean} isRoot
+     */
+
   }, {
     key: 'emitCleanup',
     value: function emitCleanup() {
@@ -141,16 +174,36 @@ var ExecutionContext = (function (_EventEmitter) {
 
       this.emit('cleanup', isRoot);
     }
+
+    /**
+     * Creates a child context, that have the same map of variables.
+     * Set context cleanup listener for propagating the event to the child.
+     * Return child context object.
+     * @return {ExecutionContext}
+     */
+
   }, {
     key: 'createChildContext',
     value: function createChildContext() {
       var newContext = new ExecutionContext(this.variables);
       var stopper = this.addCleanupListener(function (isRoot) {
         newContext.emitCleanup(false);
-        !isRoot && stopper();
+        if (!isRoot) {
+          stopper();
+        }
       });
       return newContext;
     }
+
+    /**
+     * Execute given function "in context": set the context
+     * as globally active with saving of previous active context,
+     * and execute a function. While function executing
+     * `ExecutionContext.getCurrentContext()` will return the context.
+     * At the end of the execution it puts previous context back.
+     * @param  {Function} fn
+     */
+
   }, {
     key: 'withinContext',
     value: function withinContext(fn) {
@@ -162,6 +215,17 @@ var ExecutionContext = (function (_EventEmitter) {
         ExecutionContext.__currentContext = prevContext;
       }
     }
+
+    /**
+     * By given container class get variables from
+     * the context and merge it with given initial values
+     * and variables mapping. Return the result of the merge.
+     * @param  {Class} containerClass
+     * @param  {OBject} initVars
+     * @param  {Object} mapVars
+     * @return {Object}
+     */
+
   }, {
     key: 'getVariables',
     value: function getVariables(containerClass) {
@@ -174,21 +238,29 @@ var ExecutionContext = (function (_EventEmitter) {
         this.variables.set(containerClass, contextVars);
       }
 
-      var result = {};
       for (var k in initVars) {
-        if (mapVars[k] !== undefined) {
-          (0, _invariant2.default)(_utils2.default._isProperty(mapVars[k]), 'You can pass to a mapping only parent variables');
-          result[k] = mapVars[k];
-        } else if (contextVars[k] !== undefined) {
-          result[k] = contextVars[k];
-        } else {
-          contextVars[k] = _utils2.default._createProperty(initVars[k]);
-          result[k] = contextVars[k];
+        if (contextVars[k] === undefined) {
+          if (mapVars[k] !== undefined) {
+            (0, _invariant2.default)(utils._isProperty(mapVars[k]), 'You can pass to a mapping only parent variables');
+            contextVars[k] = mapVars[k];
+          } else {
+            contextVars[k] = utils._createProperty(initVars[k]);
+          }
         }
       }
 
-      return result;
+      return contextVars;
     }
+
+    /**
+     * Track changes of given variable and regenerate value
+     * on change. It also listen to context cleanup event
+     * for stop variable change listeners
+     * @param  {Property} prop
+     * @param  {Object} vars
+     * @param  {Function} valueGenerator
+     */
+
   }, {
     key: 'trackVariablesChange',
     value: function trackVariablesChange(prop, vars, valueGenerator) {
@@ -203,29 +275,37 @@ var ExecutionContext = (function (_EventEmitter) {
         var nextValue = _this3.withinContext(function () {
           return valueGenerator(vars);
         });
-        if (_utils2.default._isCursor(nextValue)) {
+        if (utils._isCursor(nextValue)) {
           _this3.trackCursorChange(prop, nextValue);
-          prop.emitChange();
-        } else if (!_utils2.default._isProperty(nextValue)) {
+        } else if (!utils._isProperty(nextValue)) {
           prop(nextValue);
         } else {
           throw new Error('Next value can\'t be a property');
         }
       };
 
-      var varTrackers = (0, _map3.default)(vars, function (val) {
-        return val.addChangeListener(updater);
+      var varTrackers = (0, _map3.default)((0, _keys3.default)(vars), function (k) {
+        return vars[k].addChangeListener(updater);
       });
 
       var stopper = this.addCleanupListener(function (isRoot) {
         if (!isRoot) {
-          varTrackers.forEach(function (stop) {
+          (0, _forEach2.default)(varTrackers, function (stop) {
             return stop();
           });
           stopper();
         }
       });
     }
+
+    /**
+     * Observe given cursor for changes and set new
+     * result in given property. Also tracks context
+     * cleanup event for stop observers
+     * @param  {Property} prop
+     * @param  {Cursor} cursor
+     */
+
   }, {
     key: 'trackCursorChange',
     value: function trackCursorChange(prop, cursor) {
@@ -238,7 +318,7 @@ var ExecutionContext = (function (_EventEmitter) {
       var observer = function observer(result) {
         if (Array.isArray(result)) {
           result = (0, _map3.default)(result, function (x) {
-            return _utils2.default._createPropertyWithContext(x, _this4);
+            return utils._createPropertyWithContext(x, _this4);
           });
         }
         prop(result);
@@ -258,6 +338,12 @@ var ExecutionContext = (function (_EventEmitter) {
         }
       });
     }
+
+    /**
+     * Returns a current active context, set by `withinContext`
+     * @return {ExecutionContext}
+     */
+
   }], [{
     key: 'getCurrentContext',
     value: function getCurrentContext() {
@@ -267,7 +353,9 @@ var ExecutionContext = (function (_EventEmitter) {
 
   return ExecutionContext;
 })(_marsdb.EventEmitter);
-},{"./utils":5,"fast.js/map":14,"invariant":19,"marsdb":undefined}],3:[function(require,module,exports){
+
+exports.default = ExecutionContext;
+},{"./utils":5,"fast.js/forEach":9,"fast.js/map":11,"fast.js/object/keys":14,"invariant":16,"marsdb":undefined}],3:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -292,6 +380,14 @@ var _marsdb = require('marsdb');
 
 var _CursorObservable = require('marsdb/dist/CursorObservable');
 
+var _invariant = require('invariant');
+
+var _invariant2 = _interopRequireDefault(_invariant);
+
+var _ExecutionContext = require('./ExecutionContext');
+
+var _ExecutionContext2 = _interopRequireDefault(_ExecutionContext);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -315,9 +411,9 @@ var QueryExecutor = (function (_EventEmitter) {
     _this.containerClass = containerClass;
     _this.fragmentNames = (0, _keys3.default)(fragments);
     _this.initVarsOverride = initVarsOverride;
-    _this.context = new ExecutionContext();
+    _this.context = new _ExecutionContext2.default();
     _this.variables = _this.context.getVariables(containerClass, initVarsOverride);
-    _this._handleDataChanges = (0, _CursorObservable.debounce)(_this._handleDataChanges.bind(_this), 10, 5);
+    _this._handleDataChanges = (0, _CursorObservable.debounce)(_this._handleDataChanges.bind(_this), 1000 / 60, 5);
     return _this;
   }
 
@@ -349,7 +445,7 @@ var QueryExecutor = (function (_EventEmitter) {
     value: function stop() {
       var _this3 = this;
 
-      invariant(this._execution, 'stop(...): query is not executing');
+      (0, _invariant2.default)(this._execution, 'stop(...): query is not executing');
 
       this._execution.then(function () {
         (0, _forEach2.default)(_this3._stoppers, function (stop) {
@@ -365,7 +461,7 @@ var QueryExecutor = (function (_EventEmitter) {
     value: function updateVariables(nextProps) {
       var _this4 = this;
 
-      invariant(this._execution, 'updateVariables(...): query is not executing');
+      (0, _invariant2.default)(this._execution, 'updateVariables(...): query is not executing');
 
       this._execution.then(function () {
         (0, _forEach2.default)(nextProps, function (prop, k) {
@@ -397,7 +493,7 @@ var QueryExecutor = (function (_EventEmitter) {
 })(_marsdb.EventEmitter);
 
 exports.default = QueryExecutor;
-},{"fast.js/forEach":9,"fast.js/map":14,"fast.js/object/keys":17,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],4:[function(require,module,exports){
+},{"./ExecutionContext":2,"fast.js/forEach":9,"fast.js/map":11,"fast.js/object/keys":14,"invariant":16,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -501,7 +597,7 @@ function createContainer(Component, _ref) {
     }, {
       key: 'render',
       value: function render() {
-        var variables = this.props[fragmentKeys[0]].context.variables.get(Container);
+        var variables = this.props[fragmentKeys[0]].context.getVariables(Container);
         return _react2.default.createElement(Component, _extends({}, this.props, { variables: variables }));
       }
     }], [{
@@ -538,7 +634,7 @@ function createContainer(Component, _ref) {
 
   return Container;
 }
-},{"./ExecutionContext":2,"./QueryExecutor":3,"./utils":5,"fast.js/forEach":9,"fast.js/object/assign":15,"fast.js/object/keys":17,"invariant":19,"react":undefined}],5:[function(require,module,exports){
+},{"./ExecutionContext":2,"./QueryExecutor":3,"./utils":5,"fast.js/forEach":9,"fast.js/object/assign":12,"fast.js/object/keys":14,"invariant":16,"react":undefined}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -555,9 +651,9 @@ var _map2 = require('fast.js/map');
 
 var _map3 = _interopRequireDefault(_map2);
 
-var _bind2 = require('fast.js/function/bind');
+var _keys2 = require('fast.js/object/keys');
 
-var _bind3 = _interopRequireDefault(_bind2);
+var _keys3 = _interopRequireDefault(_keys2);
 
 var _marsdb = require('marsdb');
 
@@ -571,7 +667,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
 // Internals
 var _propertyVersionId = 0;
-var noop = function noop() {};
+var noop = function noop() {}; // eslint-disable-line
 
 /**
  * Return true if given value is a property
@@ -620,14 +716,14 @@ function _getFragmentValue(containerClass, valueGenerator, vars, context) {
       prop(value);
     }
 
-    context.trackVariablesChange(prop, vars, valueGenerator);;
+    context.trackVariablesChange(prop, vars, valueGenerator);
   }
 
   return prop;
 }
 
 /**
- * Return a function that join the result to given joinObj.
+ * Return a function that join the result of given joinObj.
  * @param  {Class} containerClass
  * @param  {Object} joinObj
  * @param  {Object} vars
@@ -635,29 +731,37 @@ function _getFragmentValue(containerClass, valueGenerator, vars, context) {
  * @return {Function}
  */
 function _getJoinFunction(containerClass, joinObj, vars, context) {
-  return function () {
-    var doc = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+  var joinObjKeys = (0, _keys3.default)(joinObj);
+
+  return function (doc) {
     var updated = arguments.length <= 1 || arguments[1] === undefined ? noop : arguments[1];
 
-    if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object') {
-      return (0, _map3.default)(joinObj, function (fragment, k) {
-        var valueGenerator = (0, _bind3.default)(fragment, null, doc);
-        var prop = _getFragmentValue(containerClass, valueGenerator, vars, context);
-        doc[k] = prop;
+    if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object' && doc !== null) {
+      return (0, _map3.default)(joinObjKeys, function (k) {
+        if (doc[k] === undefined) {
+          var _ret = (function () {
+            var valueGenerator = function valueGenerator(opts) {
+              return joinObj[k](doc, opts);
+            };
+            var prop = _getFragmentValue(containerClass, valueGenerator, vars, context);
+            doc[k] = prop;
 
-        if (!prop.promise) {
-          (function () {
-            var changeStopper = prop.addChangeListener(updated);
-            var cleanStopper = context.addCleanupListener(function (isRoot) {
-              if (!isRoot) {
-                cleanStopper();
-                changeStopper();
-              }
-            });
+            return {
+              v: Promise.resolve(prop.promise).then(function (res) {
+                var changeStopper = prop.addChangeListener(updated);
+                var cleanStopper = context.addCleanupListener(function (isRoot) {
+                  if (!isRoot) {
+                    cleanStopper();
+                    changeStopper();
+                  }
+                });
+                return res;
+              })
+            };
           })();
-        }
 
-        return prop.promise;
+          if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+        }
       });
     }
   };
@@ -722,7 +826,7 @@ function _createPropertyWithContext(value, context) {
   nextProp.context = context;
   return nextProp;
 }
-},{"fast.js/function/bind":12,"fast.js/map":14,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],6:[function(require,module,exports){
+},{"fast.js/map":11,"fast.js/object/keys":14,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],6:[function(require,module,exports){
 var createContainer = require('./dist/createContainer').default;
 var DataManagerContainer = require('./dist/DataManagerContainer').default;
 
@@ -756,7 +860,7 @@ module.exports = function fastForEach (subject, fn, thisContext) {
   }
 };
 
-},{"../function/bindInternal3":13}],8:[function(require,module,exports){
+},{"../function/bindInternal3":10}],8:[function(require,module,exports){
 'use strict';
 
 var bindInternal3 = require('../function/bindInternal3');
@@ -782,7 +886,7 @@ module.exports = function fastMap (subject, fn, thisContext) {
   return result;
 };
 
-},{"../function/bindInternal3":13}],9:[function(require,module,exports){
+},{"../function/bindInternal3":10}],9:[function(require,module,exports){
 'use strict';
 
 var forEachArray = require('./array/forEach'),
@@ -805,142 +909,7 @@ module.exports = function fastForEach (subject, fn, thisContext) {
     return forEachObject(subject, fn, thisContext);
   }
 };
-},{"./array/forEach":7,"./object/forEach":16}],10:[function(require,module,exports){
-'use strict';
-
-/**
- * Internal helper for applying a function without a context.
- */
-module.exports = function applyNoContext (subject, args) {
-  switch (args.length) {
-    case 0:
-      return subject();
-    case 1:
-      return subject(args[0]);
-    case 2:
-      return subject(args[0], args[1]);
-    case 3:
-      return subject(args[0], args[1], args[2]);
-    case 4:
-      return subject(args[0], args[1], args[2], args[3]);
-    case 5:
-      return subject(args[0], args[1], args[2], args[3], args[4]);
-    case 6:
-      return subject(args[0], args[1], args[2], args[3], args[4], args[5]);
-    case 7:
-      return subject(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
-    case 8:
-      return subject(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
-    default:
-      return subject.apply(undefined, args);
-  }
-};
-
-},{}],11:[function(require,module,exports){
-'use strict';
-
-/**
- * Internal helper for applying a function with a context.
- */
-module.exports = function applyWithContext (subject, thisContext, args) {
-  switch (args.length) {
-    case 0:
-      return subject.call(thisContext);
-    case 1:
-      return subject.call(thisContext, args[0]);
-    case 2:
-      return subject.call(thisContext, args[0], args[1]);
-    case 3:
-      return subject.call(thisContext, args[0], args[1], args[2]);
-    case 4:
-      return subject.call(thisContext, args[0], args[1], args[2], args[3]);
-    case 5:
-      return subject.call(thisContext, args[0], args[1], args[2], args[3], args[4]);
-    case 6:
-      return subject.call(thisContext, args[0], args[1], args[2], args[3], args[4], args[5]);
-    case 7:
-      return subject.call(thisContext, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
-    case 8:
-      return subject.call(thisContext, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
-    default:
-      return subject.apply(thisContext, args);
-  }
-};
-
-},{}],12:[function(require,module,exports){
-'use strict';
-
-var applyWithContext = require('./applyWithContext');
-var applyNoContext = require('./applyNoContext');
-
-/**
- * # Bind
- * Analogue of `Function::bind()`.
- *
- * ```js
- * var bind = require('fast.js').bind;
- * var bound = bind(myfunc, this, 1, 2, 3);
- *
- * bound(4);
- * ```
- *
- *
- * @param  {Function} fn          The function which should be bound.
- * @param  {Object}   thisContext The context to bind the function to.
- * @param  {mixed}    args, ...   Additional arguments to pre-bind.
- * @return {Function}             The bound function.
- */
-module.exports = function fastBind (fn, thisContext) {
-  var boundLength = arguments.length - 2,
-      boundArgs;
-
-  if (boundLength > 0) {
-    boundArgs = new Array(boundLength);
-    for (var i = 0; i < boundLength; i++) {
-      boundArgs[i] = arguments[i + 2];
-    }
-    if (thisContext !== undefined) {
-      return function () {
-        var length = arguments.length,
-            args = new Array(boundLength + length),
-            i;
-        for (i = 0; i < boundLength; i++) {
-          args[i] = boundArgs[i];
-        }
-        for (i = 0; i < length; i++) {
-          args[boundLength + i] = arguments[i];
-        }
-        return applyWithContext(fn, thisContext, args);
-      };
-    }
-    else {
-      return function () {
-        var length = arguments.length,
-            args = new Array(boundLength + length),
-            i;
-        for (i = 0; i < boundLength; i++) {
-          args[i] = boundArgs[i];
-        }
-        for (i = 0; i < length; i++) {
-          args[boundLength + i] = arguments[i];
-        }
-        return applyNoContext(fn, args);
-      };
-    }
-  }
-  if (thisContext !== undefined) {
-    return function () {
-      return applyWithContext(fn, thisContext, arguments);
-    };
-  }
-  else {
-    return function () {
-      return applyNoContext(fn, arguments);
-    };
-  }
-};
-
-},{"./applyNoContext":10,"./applyWithContext":11}],13:[function(require,module,exports){
+},{"./array/forEach":7,"./object/forEach":13}],10:[function(require,module,exports){
 'use strict';
 
 /**
@@ -953,7 +922,7 @@ module.exports = function bindInternal3 (func, thisContext) {
   };
 };
 
-},{}],14:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 
 var mapArray = require('./array/map'),
@@ -977,7 +946,7 @@ module.exports = function fastMap (subject, fn, thisContext) {
     return mapObject(subject, fn, thisContext);
   }
 };
-},{"./array/map":8,"./object/map":18}],15:[function(require,module,exports){
+},{"./array/map":8,"./object/map":15}],12:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1013,7 +982,7 @@ module.exports = function fastAssign (target) {
   return target;
 };
 
-},{}],16:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 'use strict';
 
 var bindInternal3 = require('../function/bindInternal3');
@@ -1038,7 +1007,7 @@ module.exports = function fastForEachObject (subject, fn, thisContext) {
   }
 };
 
-},{"../function/bindInternal3":13}],17:[function(require,module,exports){
+},{"../function/bindInternal3":10}],14:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1056,7 +1025,7 @@ module.exports = typeof Object.keys === "function" ? Object.keys : /* istanbul i
   }
   return keys;
 };
-},{}],18:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict';
 
 var bindInternal3 = require('../function/bindInternal3');
@@ -1084,7 +1053,7 @@ module.exports = function fastMapObject (subject, fn, thisContext) {
   return result;
 };
 
-},{"../function/bindInternal3":13}],19:[function(require,module,exports){
+},{"../function/bindInternal3":10}],16:[function(require,module,exports){
 /**
  * Copyright 2013-2015, Facebook, Inc.
  * All rights reserved.

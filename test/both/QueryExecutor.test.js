@@ -10,5 +10,19 @@ chai.should();
 
 
 describe('QueryExecutor', function () {
+  describe('#execute', function () {
 
+  });
+
+  describe('#stop', function () {
+
+  });
+
+  describe('#updateVariables', function () {
+
+  });
+
+  describe('#_handleDataChanges', function () {
+
+  });
 });
