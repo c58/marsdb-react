@@ -108,18 +108,46 @@ describe('QueryExecutor', function () {
   });
 
   describe('#stop', function () {
+    it('should rise an exception if not executing', function () {
 
+    });
+
+    it('should wait untils query is executed', function () {
+
+    });
+
+    it('should remove all listeners and cleanup context', function () {
+
+    });
   });
 
   describe('#updateVariables', function () {
+    it('should rise an exception if not executing', function () {
 
+    });
+
+    it('should wait untils query is executed', function () {
+
+    });
+
+    it('should set new values in existing properties', function () {
+
+    });
   });
 
   describe('#_handleDataChanges', function () {
+    it('should be debounced', function () {
 
+    });
   });
 
   describe('#_doHandleDataChanges', function () {
+    it('should emit an update event only when all properties ready', function () {
 
+    });
+
+    it('should emit update event only once on multiple calls until previous does not resolved', function () {
+
+    });
   });
 });
