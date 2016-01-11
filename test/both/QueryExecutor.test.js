@@ -70,16 +70,15 @@ describe('QueryExecutor', function () {
         class TestComponent {}
         const containerClass = createContainer(TestComponent, {
           initialVariables: { testVar: 'val' },
-          fragments: { test: ({testVar}) => db.findOne() },
+          fragments: { test: ({testVar}) => db.findOne().debounce(0) },
         });
         const query = containerClass.getQuery();
         expect(query.result).to.be.undefined;
         const res = query.execute();
         query.execute().should.be.equal(res);
         expect(query.result.test()).to.be.null;
-        return res.then(() => {
+        return res.then((tmp) => {
           query.result.test().should.be.deep.equal({a: 1, _id: '1'});
-          query.execute().should.be.equal(res);
         });
       });
     });
@@ -92,7 +91,7 @@ describe('QueryExecutor', function () {
         class TestComponent {}
         const containerClass = createContainer(TestComponent, {
           initialVariables: { testVar: 'val' },
-          fragments: { test: ({testVar}) => db.findOne() },
+          fragments: { test: ({testVar}) => db.findOne().debounce(0) },
         });
         const query = containerClass.getQuery();
         query.on('update', cb);
@@ -100,7 +99,7 @@ describe('QueryExecutor', function () {
         const res = query.execute();
         expect(query.result.test()).to.be.null;
         cb.should.have.been.callCount(0);
-        return res.then(() => {
+        return res.then((tmp) => {
           cb.should.have.been.callCount(1);
         });
       });
@@ -109,45 +108,187 @@ describe('QueryExecutor', function () {
 
   describe('#stop', function () {
     it('should rise an exception if not executing', function () {
+      const db = new Collection('test');
+      const cb = sinon.spy();
 
+      return db.insert({a: 1, _id: '1'}).then(() => {
+        class TestComponent {}
+        const containerClass = createContainer(TestComponent, {
+          initialVariables: { testVar: 'val' },
+          fragments: { test: ({testVar}) => db.findOne().debounce(0) },
+        });
+        const query = containerClass.getQuery();
+        (() => query.stop()).should.throw(Error);
+      });
     });
 
-    it('should wait untils query is executed', function () {
+    it('should wait untils query is executed', function (done) {
+      const db = new Collection('test');
+      const cb = sinon.spy();
 
+      return db.insert({a: 1, _id: '1'}).then(() => {
+        class TestComponent {}
+        const containerClass = createContainer(TestComponent, {
+          initialVariables: { testVar: 'val' },
+          fragments: { test: ({testVar}) => db.find().debounce(0) },
+        });
+        const query = containerClass.getQuery();
+        query.execute().then(() => {
+          query.on('update', cb);
+          db.insert({a: 2, _id: '2'}).then(() => {
+            setTimeout(() => {
+              cb.should.have.callCount(0);
+              done()
+            }, 100);
+          })
+        })
+        query.stop();
+      });
     });
 
     it('should remove all listeners and cleanup context', function () {
+      const db = new Collection('test');
+      const cb1 = sinon.spy();
+      const cb2 = sinon.spy();
 
+      return db.insert({a: 1, _id: '1'}).then(() => {
+        class TestComponent {}
+        const containerClass = createContainer(TestComponent, {
+          initialVariables: { testVar: 'val' },
+          fragments: { test: ({testVar}) => db.find().debounce(0) },
+        });
+        const query = containerClass.getQuery();
+        query.execute();
+        query.on('update', cb1);
+        query.context.addCleanupListener(cb2);
+        return query.stop().then(() => {
+          cb1.should.have.callCount(1);
+          cb2.should.have.callCount(1);
+          query.listeners('update', true).should.be.false;
+          query.context.listeners('cleanup', true).should.be.true;
+        });
+      });
     });
   });
 
   describe('#updateVariables', function () {
-    it('should rise an exception if not executing', function () {
+    it('should update only eisting variables', function () {
+      class TestComponent {}
+      const containerClass = createContainer(TestComponent, {
+        initialVariables: { testVar: 0 },
+        fragments: { test: ({testVar}) => testVar() },
+      });
+      const query = containerClass.getQuery();
+      query.variables.testVar().should.be.equal(0);
+      query.debounce(0).batchSize(0);
+      query.execute();
+      return query.updateVariables({testVar: 1, anotherVar: 2}).then(() => {
+        query.variables.testVar().should.be.equal(1);
+        expect(query.variables.anotherVar).to.be.undefined;
+      })
+    });
 
+    it('should rise an exception if not executing', function () {
+      const db = new Collection('test');
+      const cb = sinon.spy();
+
+      return db.insert({a: 1, _id: '1'}).then(() => {
+        class TestComponent {}
+        const containerClass = createContainer(TestComponent, {
+          initialVariables: { testVar: 'val' },
+          fragments: { test: ({testVar}) => db.findOne().debounce(0) },
+        });
+        const query = containerClass.getQuery();
+        (() => query.updateVariables({test: 1})).should.throw(Error);
+      });
     });
 
     it('should wait untils query is executed', function () {
+      const db = new Collection('test');
+      const cb = sinon.spy();
 
+      return db.insert({a: 1, _id: '1'}).then(() => {
+        class TestComponent {}
+        const containerClass = createContainer(TestComponent, {
+          initialVariables: { testVar: 0 },
+          fragments: { test: ({testVar}) => db.findOne({a: {$gt: testVar()}}).debounce(0) },
+        });
+        const query = containerClass.getQuery();
+        query.debounce(0).batchSize(0);
+        return Promise.all([
+          query.execute().then((res) => {
+            res.test().should.be.deep.equal({a: 1, _id: '1'});
+          }),
+          query.updateVariables({testVar: 1}).then(() => {
+            query.variables.testVar().should.be.equal(1);
+            return query.execute().then((res) => {
+              expect(res.test()).to.be.deep.equal(undefined);
+            });
+          })
+        ]);
+      });
     });
 
     it('should set new values in existing properties', function () {
-
+      class TestComponent {}
+      const containerClass = createContainer(TestComponent, {
+        initialVariables: { testVar: 0 },
+        fragments: { test: ({testVar}) => testVar() },
+      });
+      const query = containerClass.getQuery();
+      query.variables.testVar().should.be.equal(0);
+      query.debounce(0).batchSize(0);
+      query.execute();
+      return query.updateVariables({testVar: 1}).then(() => {
+        query.variables.testVar().should.be.equal(1);
+        return query.execute().then((res) => {
+          expect(res.test()).to.be.deep.equal(1);
+        });
+      })
     });
   });
 
   describe('#_handleDataChanges', function () {
-    it('should be debounced', function () {
-
+    it('should be debounced and resolves the result of update', function () {
+      class TestComponent {}
+      const containerClass = createContainer(TestComponent, {
+        initialVariables: { testVar: 0 },
+        fragments: { test: ({testVar}) => testVar() },
+      });
+      const query = containerClass.getQuery();
+      query.result = {test: utils._createProperty('test')};
+      query._handleDataChanges().then((res) => {
+        res.test().should.be.equal('test');
+      })
     });
-  });
 
-  describe('#_doHandleDataChanges', function () {
     it('should emit an update event only when all properties ready', function () {
+      const db = new Collection('test');
+      const cb = sinon.spy();
 
-    });
-
-    it('should emit update event only once on multiple calls until previous does not resolved', function () {
-
+      return db.insert({a: 1, _id: '1'}).then(() => {
+        class TestComponent {}
+        const containerClass = createContainer(TestComponent, {
+          initialVariables: { testVar: 0 },
+          fragments: {
+            test_1: ({testVar}) => db.findOne({a: {$gt: testVar()}}).debounce(0),
+            test_2: ({testVar}) => db.findOne({a: {$gt: testVar()}}).debounce(0),
+          },
+        });
+        const query = containerClass.getQuery();
+        query.debounce(0).batchSize(0);
+        query.result = {
+          test_1: query.context.withinContext(() => containerClass.getFragment('test_1')),
+          test_2: query.context.withinContext(() => containerClass.getFragment('test_2')),
+        };
+        query.on('update', cb);
+        const promise = query._handleDataChanges();
+        cb.should.have.callCount(0);
+        return promise.then((res) => {
+          res.test_1().should.be.deep.equal({a: 1, _id: '1'});
+          res.test_2().should.be.deep.equal({a: 1, _id: '1'});
+        });
+      });
     });
   });
 });
