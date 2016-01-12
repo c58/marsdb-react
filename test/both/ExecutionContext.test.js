@@ -404,7 +404,7 @@ describe('ExecutionContext', function () {
           setTimeout(() => {
             prop().should.have.length(2);
             resolve();
-          }, 100);
+          }, 30);
         });
       });
     });

@@ -10,21 +10,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import AddTodoMutation from '../mutations/AddTodoMutation';
+import TodoModel from '../models/TodoModel';
 import TodoListFooter from './TodoListFooter';
 import TodoTextInput from './TodoTextInput';
-
 import React from 'react';
-import Relay from 'react-relay';
+import { createContainer } from 'marsdb-react';
 
 class TodoApp extends React.Component {
   _handleTextInputSave = (text) => {
-    Relay.Store.update(
-      new AddTodoMutation({text, viewer: this.props.viewer})
-    );
+    TodoModel.addTodo(text);
   }
+
   render() {
-    var hasTodos = this.props.viewer.totalCount > 0;
+    var hasTodos = this.props.totalCount() > 0;
     return (
       <div>
         <section className="todoapp">
@@ -44,8 +42,8 @@ class TodoApp extends React.Component {
 
           {hasTodos &&
             <TodoListFooter
-              todos={this.props.viewer.todos}
-              viewer={this.props.viewer}
+              totalCount={this.props.totalCount}
+              completedCount={this.props.completedCount}
             />
           }
         </section>
@@ -67,14 +65,9 @@ class TodoApp extends React.Component {
   }
 }
 
-export default Relay.createContainer(TodoApp, {
+export default createContainer(TodoApp, {
   fragments: {
-    viewer: () => Relay.QL`
-      fragment on User {
-        totalCount,
-        ${AddTodoMutation.getFragment('viewer')},
-        ${TodoListFooter.getFragment('viewer')},
-      }
-    `,
+    totalCount: () => TodoListFooter.getFragment('totalCount'),
+    completedCount: () => TodoListFooter.getFragment('completedCount'),
   },
 });

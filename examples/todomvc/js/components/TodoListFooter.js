@@ -10,24 +10,20 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import TodoModel from '../models/TodoModel';
 import {IndexLink, Link} from 'react-router';
-import RemoveCompletedTodosMutation from '../mutations/RemoveCompletedTodosMutation';
-
 import React from 'react';
-import Relay from 'react-relay';
+import { createContainer } from 'marsdb-react';
+
 
 class TodoListFooter extends React.Component {
   _handleRemoveCompletedTodosClick = () => {
-    Relay.Store.update(
-      new RemoveCompletedTodosMutation({
-        todos: this.props.viewer.todos,
-        viewer: this.props.viewer,
-      })
-    );
+    TodoModel.removeCompletedTodos();
   }
+
   render() {
-    var numCompletedTodos = this.props.viewer.completedCount;
-    var numRemainingTodos = this.props.viewer.totalCount - numCompletedTodos;
+    var numCompletedTodos = this.props.completedCount();
+    var numRemainingTodos = this.props.totalCount() - numCompletedTodos;
     return (
       <footer className="footer">
         <span className="todo-count">
@@ -56,23 +52,9 @@ class TodoListFooter extends React.Component {
   }
 }
 
-export default Relay.createContainer(TodoListFooter, {
-  prepareVariables() {
-    return {
-      limit: Number.MAX_SAFE_INTEGER || 9007199254740991,
-    };
-  },
-
+export default createContainer(TodoListFooter, {
   fragments: {
-    viewer: () => Relay.QL`
-      fragment on User {
-        completedCount,
-        todos(status: "completed", first: $limit) {
-          ${RemoveCompletedTodosMutation.getFragment('todos')},
-        },
-        totalCount,
-        ${RemoveCompletedTodosMutation.getFragment('viewer')},
-      }
-    `,
+    completedCount: () => TodoModel.count({completed: true}),
+    totalCount: () => TodoModel.count(),
   },
 });

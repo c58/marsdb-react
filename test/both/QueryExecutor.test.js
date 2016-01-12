@@ -139,7 +139,7 @@ describe('QueryExecutor', function () {
             setTimeout(() => {
               cb.should.have.callCount(0);
               done()
-            }, 100);
+            }, 30);
           })
         })
         query.stop();

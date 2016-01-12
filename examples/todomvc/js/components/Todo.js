@@ -10,14 +10,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import ChangeTodoStatusMutation from '../mutations/ChangeTodoStatusMutation';
-import RemoveTodoMutation from '../mutations/RemoveTodoMutation';
-import RenameTodoMutation from '../mutations/RenameTodoMutation';
+import TodoModel from '../models/TodoModel';
 import TodoTextInput from './TodoTextInput';
-
 import React from 'react';
-import Relay from 'react-relay';
 import classnames from 'classnames';
+import { createContainer } from 'marsdb-react';
+
 
 class Todo extends React.Component {
   state = {
@@ -25,13 +23,7 @@ class Todo extends React.Component {
   };
   _handleCompleteChange = (e) => {
     var complete = e.target.checked;
-    Relay.Store.update(
-      new ChangeTodoStatusMutation({
-        complete,
-        todo: this.props.todo,
-        viewer: this.props.viewer,
-      })
-    );
+    TodoModel.changeTodoStatus(complete, this.props.todo());
   }
   _handleDestroyClick = () => {
     this._removeTodo();
@@ -48,14 +40,10 @@ class Todo extends React.Component {
   }
   _handleTextInputSave = (text) => {
     this._setEditMode(false);
-    Relay.Store.update(
-      new RenameTodoMutation({todo: this.props.todo, text})
-    );
+    TodoModel.renameTodo(text, this.props.todo());
   }
   _removeTodo() {
-    Relay.Store.update(
-      new RemoveTodoMutation({todo: this.props.todo, viewer: this.props.viewer})
-    );
+    TodoModel.removeTodo(this.props.todo());
   }
   _setEditMode = (shouldEdit) => {
     this.setState({isEditing: shouldEdit});
@@ -65,7 +53,7 @@ class Todo extends React.Component {
       <TodoTextInput
         className="edit"
         commitOnBlur={true}
-        initialValue={this.props.todo.text}
+        initialValue={this.props.todo().text}
         onCancel={this._handleTextInputCancel}
         onDelete={this._handleTextInputDelete}
         onSave={this._handleTextInputSave}
@@ -76,18 +64,18 @@ class Todo extends React.Component {
     return (
       <li
         className={classnames({
-          completed: this.props.todo.complete,
+          completed: this.props.todo().complete,
           editing: this.state.isEditing,
         })}>
         <div className="view">
           <input
-            checked={this.props.todo.complete}
+            checked={this.props.todo().complete}
             className="toggle"
             onChange={this._handleCompleteChange}
             type="checkbox"
           />
           <label onDoubleClick={this._handleLabelDoubleClick}>
-            {this.props.todo.text}
+            {this.props.todo().text}
           </label>
           <button
             className="destroy"
@@ -100,23 +88,12 @@ class Todo extends React.Component {
   }
 }
 
-export default Relay.createContainer(Todo, {
+export default createContainer(Todo, {
   fragments: {
-    todo: () => Relay.QL`
-      fragment on Todo {
-        complete,
-        id,
-        text,
-        ${ChangeTodoStatusMutation.getFragment('todo')},
-        ${RemoveTodoMutation.getFragment('todo')},
-        ${RenameTodoMutation.getFragment('todo')},
-      }
-    `,
-    viewer: () => Relay.QL`
-      fragment on User {
-        ${ChangeTodoStatusMutation.getFragment('viewer')},
-        ${RemoveTodoMutation.getFragment('viewer')},
-      }
-    `,
+    todo: {}
+    // empty fragment is used for two things
+    // 1. As a placeholder for a future needs
+    // 2. For optimal component updating when given
+    //    todo is not changed
   },
 });

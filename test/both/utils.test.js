@@ -92,6 +92,20 @@ describe('Utils', function () {
       property.emitChange();
       property.version.should.not.be.equal(versionOld);
     });
+
+    it('should emit change only when one argument passed', function () {
+      var cb = sinon.spy();
+      const property = utils._createProperty('val');
+      const stopper = property.addChangeListener(cb);
+      property();
+      cb.should.have.been.callCount(0);
+      property.emitChange();
+      cb.should.have.been.callCount(1);
+      property('val1');
+      cb.should.have.been.callCount(2);
+      property('val1', true);
+      cb.should.have.been.callCount(2);
+    });
   });
 
   describe('#_createPropertyWithContext', function () {
@@ -283,7 +297,7 @@ describe('Utils', function () {
             } else if (calls === 1) {
               utils._isProperty(doc.test).should.be.true;
               doc.test().should.have.length(2);
-              setTimeout(resolve, 100);
+              setTimeout(resolve, 50);
             } else {
               reject();
             }

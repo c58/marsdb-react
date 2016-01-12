@@ -10,35 +10,27 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import MarkAllTodosMutation from '../mutations/MarkAllTodosMutation';
+import TodoModel from '../models/TodoModel';
 import Todo from './Todo';
-
 import React from 'react';
-import Relay from 'react-relay';
+import { createContainer } from 'marsdb-react';
+
 
 class TodoList extends React.Component {
   _handleMarkAllChange = (e) => {
     var complete = e.target.checked;
-    Relay.Store.update(
-      new MarkAllTodosMutation({
-        complete,
-        todos: this.props.viewer.todos,
-        viewer: this.props.viewer,
-      })
-    );
+    TodoModel.markAllTodos(complete);
   }
+
   renderTodos() {
-    return this.props.viewer.todos.edges.map(edge =>
-      <Todo
-        key={edge.node.id}
-        todo={edge.node}
-        viewer={this.props.viewer}
-      />
+    return this.props.todos().map(todo =>
+      <Todo key={todo().id} todo={todo} />
     );
   }
+
   render() {
-    var numTodos = this.props.viewer.totalCount;
-    var numCompletedTodos = this.props.viewer.completedCount;
+    var numTodos = this.props.totalCount();
+    var numCompletedTodos = this.props.completedCount();
     return (
       <section className="main">
         <input
@@ -58,7 +50,7 @@ class TodoList extends React.Component {
   }
 }
 
-export default Relay.createContainer(TodoList, {
+export default createContainer(TodoList, {
   initialVariables: {
     status: null,
   },
@@ -79,22 +71,10 @@ export default Relay.createContainer(TodoList, {
   },
 
   fragments: {
-    viewer: () => Relay.QL`
-      fragment on User {
-        completedCount,
-        todos(status: $status, first: $limit) {
-          edges {
-            node {
-              id,
-              ${Todo.getFragment('todo')},
-            },
-          },
-          ${MarkAllTodosMutation.getFragment('todos')},
-        },
-        totalCount,
-        ${MarkAllTodosMutation.getFragment('viewer')},
-        ${Todo.getFragment('viewer')},
-      }
-    `,
+    totalCount: () => TodoModel.count(),
+    completedCount: () => TodoModel.count({complete: true}),
+    todos: ({limit, status}) =>
+      TodoModel.find({status: status()}).limit(limit())
+        .join(Todo.getFragment('todo'))
   },
 });
