@@ -47,5 +47,5 @@ TodoModel.markAllTodos = (status) => {
 };
 
 TodoModel.removeCompletedTodos = () => {
-  TodoModel.remove({complete: true});
+  TodoModel.remove({complete: true}, {multi: true});
 };

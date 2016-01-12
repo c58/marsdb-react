@@ -641,6 +641,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  * @param  {Component} Component
  * @param  {Object} options.fragments
  * @param  {Object} options.initVars
+ * @param  {Object} options.versions
  * @return {Component}
  */
 function createContainer(Component, _ref) {
@@ -653,50 +654,35 @@ function createContainer(Component, _ref) {
 
   var componentName = Component.displayName || Component.name;
   var containerName = 'Mars(' + componentName + ')';
-
   var fragmentKeys = (0, _keys3.default)(fragments);
-  var getPropsHash = function getPropsHash(props) {
-    var hash = '';
-    (0, _forEach2.default)(fragmentKeys, function (k) {
-      if (versions && versions[k] && props[k]) {
-        hash += versions[k](props[k]());
-      } else {
-        hash += props[k] && props[k].version;
-      }
-    });
-    return hash;
-  };
+  var versionKeys = (0, _keys3.default)(versions);
 
   var Container = (function (_React$Component) {
     _inherits(Container, _React$Component);
 
-    function Container(props, context) {
+    function Container() {
       _classCallCheck(this, Container);
 
-      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Container).call(this, props, context));
-
-      _this.prevHash = getPropsHash(props);
-      return _this;
+      return _possibleConstructorReturn(this, Object.getPrototypeOf(Container).apply(this, arguments));
     }
 
     _createClass(Container, [{
-      key: 'shouldComponentUpdate',
-      value: function shouldComponentUpdate(nextProps) {
-        var shouldUpdate = nextProps.children && nextProps.children.length > 0;
-
-        if (!shouldUpdate) {
-          var nextHash = getPropsHash(nextProps);
-          shouldUpdate = nextHash !== this.prevHash;
-          this.prevHash = nextHash;
-        }
-
-        return shouldUpdate;
-      }
-    }, {
       key: 'render',
       value: function render() {
+        var _this2 = this;
+
         var variables = this.props[fragmentKeys[0]].context.getVariables(Container);
-        return _react2.default.createElement(Component, _extends({}, this.props, { variables: variables }));
+
+        (0, _forEach2.default)(versionKeys, function (k) {
+          var prop = _this2.props[k] || variables[k];
+          if (utils._isProperty(prop)) {
+            prop.version = versions[k](prop());
+          }
+        });
+
+        return _react2.default.createElement(Component, _extends({}, this.props, {
+          variables: variables
+        }));
       }
     }], [{
       key: 'getFragment',

@@ -55,7 +55,6 @@ export default createContainer(TodoList, {
     status: null,
     limit: 10000,
   },
-
   fragments: {
     totalCount: () => TodoModel.count(),
     completedCount: () => TodoModel.count({complete: true}),
