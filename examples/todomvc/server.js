@@ -14,6 +14,7 @@ import express from 'express';
 import path from 'path';
 import webpack from 'webpack';
 import WebpackDevServer from 'webpack-dev-server';
+import history from 'connect-history-api-fallback';
 
 const APP_PORT = 3000
 
@@ -25,8 +26,10 @@ var compiler = webpack({
       {
         exclude: /node_modules/,
         loader: 'babel',
-        query: {stage: 0},
         test: /\.js$/,
+        query: {
+          presets: ['es2015', 'stage-0', 'react']
+        }
       },
     ],
   },

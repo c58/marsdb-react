@@ -10,10 +10,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import 'babel/polyfill';
+import 'babel-polyfill';
 import 'todomvc-common';
-import {createHashHistory} from 'history';
-import {IndexRoute, Route} from 'react-router';
+import {IndexRoute, Route, browserHistory} from 'react-router';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import TodoApp from './components/TodoApp';
@@ -22,7 +21,7 @@ import MarsRouter from './MarsRouter';
 
 
 ReactDOM.render(
-  <MarsRouter history={createHashHistory({queryKey: false})}>
+  <MarsRouter history={browserHistory}>
     <Route path="/" component={TodoApp}>
       <IndexRoute
         component={TodoList}
@@ -30,6 +29,6 @@ ReactDOM.render(
       />
       <Route path=":status" component={TodoList} />
     </Route>
-  </RelayRouter>,
+  </MarsRouter>,
   document.getElementById('root')
 );

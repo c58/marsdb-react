@@ -20,12 +20,12 @@ class TodoList extends React.Component {
   _handleMarkAllChange = (e) => {
     var complete = e.target.checked;
     TodoModel.markAllTodos(complete);
-  }
+  };
 
   renderTodos() {
-    return this.props.todos().map(todo =>
-      <Todo key={todo().id} todo={todo} />
-    );
+    return this.props.todos().map(todo => {
+      return <Todo key={todo()._id} todo={todo} />
+    });
   }
 
   render() {
@@ -53,28 +53,20 @@ class TodoList extends React.Component {
 export default createContainer(TodoList, {
   initialVariables: {
     status: null,
-  },
-
-  prepareVariables({status}) {
-    var nextStatus;
-    if (status === 'active' || status === 'completed') {
-      nextStatus = status;
-    } else {
-      // This matches the Backbone example, which displays all todos on an
-      // invalid route.
-      nextStatus = 'any';
-    }
-    return {
-      status: nextStatus,
-      limit: Number.MAX_SAFE_INTEGER || 9007199254740991,
-    };
+    limit: 10000,
   },
 
   fragments: {
     totalCount: () => TodoModel.count(),
     completedCount: () => TodoModel.count({complete: true}),
-    todos: ({limit, status}) =>
-      TodoModel.find({status: status()}).limit(limit())
+    todos: ({limit, status}) => {
+      const query = {};
+      switch (status()) {
+        case 'active': query.complete = false; break;
+        case 'completed': query.complete = true; break;
+      };
+      return TodoModel.find(query).limit(limit())
         .join(Todo.getFragment('todo'))
+    }
   },
 });

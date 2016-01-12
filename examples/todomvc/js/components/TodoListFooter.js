@@ -19,7 +19,7 @@ import { createContainer } from 'marsdb-react';
 class TodoListFooter extends React.Component {
   _handleRemoveCompletedTodosClick = () => {
     TodoModel.removeCompletedTodos();
-  }
+  };
 
   render() {
     var numCompletedTodos = this.props.completedCount();
@@ -54,7 +54,7 @@ class TodoListFooter extends React.Component {
 
 export default createContainer(TodoListFooter, {
   fragments: {
-    completedCount: () => TodoModel.count({completed: true}),
+    completedCount: () => TodoModel.count({complete: true}),
     totalCount: () => TodoModel.count(),
   },
 });

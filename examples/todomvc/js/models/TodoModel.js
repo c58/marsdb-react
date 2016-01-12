@@ -1,4 +1,4 @@
-import Collection from 'marsdb';
+import Collection from './ConfiguredCollection';
 
 
 const TodoModel = new Collection('todos');
@@ -9,20 +9,27 @@ TodoModel.addTodo = (text) => {
   TodoModel.insert({
     text: (text || '').trim(),
     complete: false,
+    updatedAt: new Date(),
   });
 };
 
 TodoModel.changeTodoStatus = (status, todo) => {
   TodoModel.update(
     {_id: todo._id},
-    {$set: {complete: status}}
+    {$set: {
+      complete: status,
+      updatedAt: new Date(),
+    }}
   );
 };
 
 TodoModel.renameTodo = (text, todo) => {
   TodoModel.update(
     {_id: todo._id},
-    {$set: {text: text}}
+    {$set: {
+      text: text,
+      updatedAt: new Date(),
+    }}
   );
 };
 
@@ -32,7 +39,10 @@ TodoModel.removeTodo = (todo) => {
 
 TodoModel.markAllTodos = (status) => {
   TodoModel.update({},
-    {$set: {complete: status}}
+    {$set: {
+      complete: status,
+      updatedAt: new Date(),
+    }}
   );
 };
 

@@ -1,6 +1,8 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.Mars || (g.Mars = {})).React = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 Object.defineProperty(exports, "__esModule", {
@@ -44,8 +46,9 @@ var DataManagerContainer = (function (_React$Component) {
       var _this2 = this;
 
       this._resolved = false;
-      this.query.execute().then(function () {
+      this.query.execute().then(function (result) {
         _this2._resolved = true;
+        _this2.setState({ result: result });
       });
     }
   }, {
@@ -69,7 +72,7 @@ var DataManagerContainer = (function (_React$Component) {
     key: 'render',
     value: function render() {
       var Component = this.props.component; // eslint-disable-line
-      return this._resolved ? _react2.default.createElement(Component, this.state.result) : null;
+      return this._resolved ? _react2.default.createElement(Component, _extends({}, this.props, this.state.result)) : null;
     }
   }]);
 
@@ -277,9 +280,12 @@ var ExecutionContext = (function (_EventEmitter) {
         });
         if (utils._isCursor(nextValue)) {
           _this3.trackCursorChange(prop, nextValue);
+          prop.emitChange();
         } else if (!utils._isProperty(nextValue)) {
           prop(nextValue);
         } else {
+          // Variables tracking must be used only vhen valueGenerator
+          // returns a Cursor or any type except Property.
           throw new Error('Next value can\'t be a property');
         }
       };
@@ -378,8 +384,6 @@ var _map3 = _interopRequireDefault(_map2);
 
 var _marsdb = require('marsdb');
 
-var _CursorObservable = require('marsdb/dist/CursorObservable');
-
 var _invariant = require('invariant');
 
 var _invariant2 = _interopRequireDefault(_invariant);
@@ -397,7 +401,19 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 /**
+ * By given frgments object, varialbes and containerClass
+ * creates a query executor.
+ * It will execute each fragment of fragments object and
+ * return a promise, that will be resolved when all fragments
+ * is filled with data.
  *
+ * Container class is an object with one static function – `getFragment`,
+ * that must return a property function. By all properties constructed
+ * a Promise that resolved when all `prop.promise` resolved.
+ *
+ * The class extends `EventEmitter`.Only one event may be emitted – `update`.
+ * The event emitted when query data is updated. With event is arrived an object
+ * of proprties for each fragment.
  */
 
 var QueryExecutor = (function (_EventEmitter) {
@@ -413,33 +429,83 @@ var QueryExecutor = (function (_EventEmitter) {
     _this.initVarsOverride = initVarsOverride;
     _this.context = new _ExecutionContext2.default();
     _this.variables = _this.context.getVariables(containerClass, initVarsOverride);
-    _this._handleDataChanges = (0, _CursorObservable.debounce)(_this._handleDataChanges.bind(_this), 1000 / 60, 5);
+    _this._handleDataChanges = (0, _marsdb.debounce)(_this._handleDataChanges.bind(_this), 1000 / 60, 5);
     return _this;
   }
 
+  /**
+   * Change a batch size of updater.
+   * Btach size is a number of changes must be happen
+   * in debounce interval to force execute debounced
+   * function (update a result, in our case)
+   *
+   * @param  {Number} batchSize
+   * @return {CursorObservable}
+   */
+
   _createClass(QueryExecutor, [{
+    key: 'batchSize',
+    value: function batchSize(_batchSize) {
+      this._handleDataChanges.updateBatchSize(_batchSize);
+      return this;
+    }
+
+    /**
+     * Change debounce wait time of the updater
+     * @param  {Number} waitTime
+     * @return {CursorObservable}
+     */
+
+  }, {
+    key: 'debounce',
+    value: function debounce(waitTime) {
+      this._handleDataChanges.updateWait(waitTime);
+      return this;
+    }
+
+    /**
+     * Execute the query and return a Promise, that resolved
+     * when all props will be filled with data.
+     * If query already executing it just returns a promise
+     * for currently executing query.
+     * @return {Promise}
+     */
+
+  }, {
     key: 'execute',
     value: function execute() {
       var _this2 = this;
 
       if (!this._execution) {
-        this.result = {};
-        this.context.withinContext(function () {
-          (0, _forEach2.default)(_this2.fragmentNames, function (k) {
-            _this2.result[k] = _this2.containerClass.getFragment(k);
+        (function () {
+          _this2.result = {};
+          _this2.context.withinContext(function () {
+            (0, _forEach2.default)(_this2.fragmentNames, function (k) {
+              _this2.result[k] = _this2.containerClass.getFragment(k);
+            });
           });
-        });
 
-        this._stoppers = (0, _map3.default)(this.fragmentNames, function (k) {
-          return _this2.result[k].addChangeListener(_this2._handleDataChanges);
-        });
+          var updater = function updater() {
+            _this2._execution = _this2._handleDataChanges();
+          };
 
-        this._execution = Promise.resolve();
-        this._handleDataChanges();
+          _this2._stoppers = (0, _map3.default)(_this2.fragmentNames, function (k) {
+            return _this2.result[k].addChangeListener(updater);
+          });
+
+          updater();
+        })();
       }
 
       return this._execution;
     }
+
+    /**
+     * Stops query executing and listening for changes.
+     * Returns a promise resolved when query stopped.
+     * @return {Promise}
+     */
+
   }, {
     key: 'stop',
     value: function stop() {
@@ -447,7 +513,7 @@ var QueryExecutor = (function (_EventEmitter) {
 
       (0, _invariant2.default)(this._execution, 'stop(...): query is not executing');
 
-      this._execution.then(function () {
+      return this._execution.then(function () {
         (0, _forEach2.default)(_this3._stoppers, function (stop) {
           return stop();
         });
@@ -456,6 +522,16 @@ var QueryExecutor = (function (_EventEmitter) {
         _this3._execution = null;
       });
     }
+
+    /**
+     * Update top level variables of the query by setting
+     * values in variable props from given object. If field
+     * exists in a given object and not exists in variables map
+     * then it will be ignored.
+     * @param  {Object} nextProps
+     * @return {Promise} resolved when variables updated
+     */
+
   }, {
     key: 'updateVariables',
     value: function updateVariables(nextProps) {
@@ -463,14 +539,23 @@ var QueryExecutor = (function (_EventEmitter) {
 
       (0, _invariant2.default)(this._execution, 'updateVariables(...): query is not executing');
 
-      this._execution.then(function () {
+      return this._execution.then(function () {
+        var updated = false;
         (0, _forEach2.default)(nextProps, function (prop, k) {
           if (_this4.variables[k]) {
             _this4.variables[k](prop);
+            updated = true;
           }
         });
+        return updated;
       });
     }
+
+    /**
+     * The method is invoked when some of fragment's property is updated.
+     * It emits an `update` event only when all `prop.promise` is resolved.
+     */
+
   }, {
     key: '_handleDataChanges',
     value: function _handleDataChanges() {
@@ -479,13 +564,15 @@ var QueryExecutor = (function (_EventEmitter) {
       var nextPromises = (0, _map3.default)(this.fragmentNames, function (k) {
         return _this5.result[k].promise;
       });
-      var allPromise = Promise.all(nextPromises).then(function () {
-        if (_this5._execution === allPromise) {
+      var resultPromise = Promise.all(nextPromises).then(function () {
+        if (_this5._resultPromise === resultPromise) {
           _this5.emit('update', _this5.result);
         }
+        return _this5.result;
       });
 
-      this._execution = allPromise;
+      this._resultPromise = resultPromise;
+      return this._resultPromise;
     }
   }]);
 
@@ -493,7 +580,7 @@ var QueryExecutor = (function (_EventEmitter) {
 })(_marsdb.EventEmitter);
 
 exports.default = QueryExecutor;
-},{"./ExecutionContext":2,"fast.js/forEach":9,"fast.js/map":11,"fast.js/object/keys":14,"invariant":16,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],4:[function(require,module,exports){
+},{"./ExecutionContext":2,"fast.js/forEach":9,"fast.js/map":11,"fast.js/object/keys":14,"invariant":16,"marsdb":undefined}],4:[function(require,module,exports){
 'use strict';
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
@@ -535,9 +622,13 @@ var _QueryExecutor2 = _interopRequireDefault(_QueryExecutor);
 
 var _utils = require('./utils');
 
-var _utils2 = _interopRequireDefault(_utils);
+var utils = _interopRequireWildcard(_utils);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -545,21 +636,23 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
-
 /**
- * High-order container creator
+ * High-order data container creator
  * @param  {Component} Component
  * @param  {Object} options.fragments
  * @param  {Object} options.initVars
  * @return {Component}
  */
 function createContainer(Component, _ref) {
-  var fragments = _ref.fragments;
-  var initialVariables = _ref.initialVariables;
-  var versions = _ref.versions;
+  var _ref$fragments = _ref.fragments;
+  var fragments = _ref$fragments === undefined ? {} : _ref$fragments;
+  var _ref$initialVariables = _ref.initialVariables;
+  var initialVariables = _ref$initialVariables === undefined ? {} : _ref$initialVariables;
+  var _ref$versions = _ref.versions;
+  var versions = _ref$versions === undefined ? {} : _ref$versions;
 
-  (0, _invariant2.default)((typeof fragments === 'undefined' ? 'undefined' : _typeof(fragments)) === 'object' && (0, _keys3.default)(fragments).length > 0, 'createContainer(...): fragments must be non-empty object');
+  var componentName = Component.displayName || Component.name;
+  var containerName = 'Mars(' + componentName + ')';
 
   var fragmentKeys = (0, _keys3.default)(fragments);
   var getPropsHash = function getPropsHash(props) {
@@ -589,9 +682,14 @@ function createContainer(Component, _ref) {
     _createClass(Container, [{
       key: 'shouldComponentUpdate',
       value: function shouldComponentUpdate(nextProps) {
-        var nextHash = getPropsHash(nextProps);
-        var shouldUpdate = nextHash !== this.prevHash;
-        this.prevHash = nextHash;
+        var shouldUpdate = nextProps.children && nextProps.children.length > 0;
+
+        if (!shouldUpdate) {
+          var nextHash = getPropsHash(nextProps);
+          shouldUpdate = nextHash !== this.prevHash;
+          this.prevHash = nextHash;
+        }
+
         return shouldUpdate;
       }
     }, {
@@ -617,21 +715,25 @@ function createContainer(Component, _ref) {
         (0, _invariant2.default)(typeof fragment === 'function' || (typeof fragment === 'undefined' ? 'undefined' : _typeof(fragment)) === 'object', 'getFragment(...): a fragment must be a function or an object');
 
         if ((typeof fragment === 'undefined' ? 'undefined' : _typeof(fragment)) === 'object') {
-          return _utils2.default._getJoinFunction(Container, fragment, vars, childContext);
+          return utils._getJoinFunction(Container, fragment, vars, childContext);
         } else {
-          return _utils2.default._getFragmentValue(Container, fragment, vars, childContext);
+          return utils._getFragmentValue(Container, fragment, vars, childContext);
         }
       }
     }, {
       key: 'getQuery',
-      value: function getQuery(initVarsOverride) {
-        return new _QueryExecutor2.default(fragments, initVarsOverride, Container);
+      value: function getQuery() {
+        var initVarsOverride = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+        var initVars = (0, _assign3.default)({}, initialVariables, initVarsOverride);
+        return new _QueryExecutor2.default(fragments, initVars, Container);
       }
     }]);
 
     return Container;
   })(_react2.default.Component);
 
+  Container.displayName = containerName;
   return Container;
 }
 },{"./ExecutionContext":2,"./QueryExecutor":3,"./utils":5,"fast.js/forEach":9,"fast.js/object/assign":12,"fast.js/object/keys":14,"invariant":16,"react":undefined}],5:[function(require,module,exports){
@@ -640,6 +742,7 @@ function createContainer(Component, _ref) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.noop = undefined;
 exports._isProperty = _isProperty;
 exports._isCursor = _isCursor;
 exports._getFragmentValue = _getFragmentValue;
@@ -667,7 +770,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
 // Internals
 var _propertyVersionId = 0;
-var noop = function noop() {}; // eslint-disable-line
+var noop = exports.noop = function noop() {}; // eslint-disable-line
 
 /**
  * Return true if given value is a property
@@ -793,7 +896,9 @@ function _createProperty(initValue) {
   var prop = function prop() {
     if (arguments.length > 0) {
       store = arguments[0];
-      prop.emitChange();
+      if (arguments.length === 1) {
+        prop.emitChange();
+      }
     }
     return store;
   };

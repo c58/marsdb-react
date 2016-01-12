@@ -19,7 +19,7 @@ import { createContainer } from 'marsdb-react';
 class TodoApp extends React.Component {
   _handleTextInputSave = (text) => {
     TodoModel.addTodo(text);
-  }
+  };
 
   render() {
     var hasTodos = this.props.totalCount() > 0;

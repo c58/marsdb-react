@@ -172,6 +172,10 @@ describe('QueryExecutor', function () {
   });
 
   describe('#updateVariables', function () {
+    it('should resolve with true if some variable updated, false otherwise', function () {
+      // TODO
+    });
+
     it('should update only eisting variables', function () {
       class TestComponent {}
       const containerClass = createContainer(TestComponent, {

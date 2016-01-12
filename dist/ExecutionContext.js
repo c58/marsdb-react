@@ -197,9 +197,12 @@ var ExecutionContext = (function (_EventEmitter) {
         });
         if (utils._isCursor(nextValue)) {
           _this3.trackCursorChange(prop, nextValue);
+          prop.emitChange();
         } else if (!utils._isProperty(nextValue)) {
           prop(nextValue);
         } else {
+          // Variables tracking must be used only vhen valueGenerator
+          // returns a Cursor or any type except Property.
           throw new Error('Next value can\'t be a property');
         }
       };

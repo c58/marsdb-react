@@ -20,8 +20,6 @@ var _map3 = _interopRequireDefault(_map2);
 
 var _marsdb = require('marsdb');
 
-var _CursorObservable = require('marsdb/dist/CursorObservable');
-
 var _invariant = require('invariant');
 
 var _invariant2 = _interopRequireDefault(_invariant);
@@ -67,37 +65,72 @@ var QueryExecutor = (function (_EventEmitter) {
     _this.initVarsOverride = initVarsOverride;
     _this.context = new _ExecutionContext2.default();
     _this.variables = _this.context.getVariables(containerClass, initVarsOverride);
-    _this._handleDataChanges = (0, _CursorObservable.debounce)(_this._handleDataChanges.bind(_this), 1000 / 60, 5);
+    _this._handleDataChanges = (0, _marsdb.debounce)(_this._handleDataChanges.bind(_this), 1000 / 60, 5);
     return _this;
   }
 
   /**
-   * Execute the query and return a Promise, that resolved
-   * when all props will be filled with data.
-   * If query already executing it just returns a promise
-   * for currently executing query.
-   * @return {Promise}
+   * Change a batch size of updater.
+   * Btach size is a number of changes must be happen
+   * in debounce interval to force execute debounced
+   * function (update a result, in our case)
+   *
+   * @param  {Number} batchSize
+   * @return {CursorObservable}
    */
 
   _createClass(QueryExecutor, [{
+    key: 'batchSize',
+    value: function batchSize(_batchSize) {
+      this._handleDataChanges.updateBatchSize(_batchSize);
+      return this;
+    }
+
+    /**
+     * Change debounce wait time of the updater
+     * @param  {Number} waitTime
+     * @return {CursorObservable}
+     */
+
+  }, {
+    key: 'debounce',
+    value: function debounce(waitTime) {
+      this._handleDataChanges.updateWait(waitTime);
+      return this;
+    }
+
+    /**
+     * Execute the query and return a Promise, that resolved
+     * when all props will be filled with data.
+     * If query already executing it just returns a promise
+     * for currently executing query.
+     * @return {Promise}
+     */
+
+  }, {
     key: 'execute',
     value: function execute() {
       var _this2 = this;
 
       if (!this._execution) {
-        this.result = {};
-        this.context.withinContext(function () {
-          (0, _forEach2.default)(_this2.fragmentNames, function (k) {
-            _this2.result[k] = _this2.containerClass.getFragment(k);
+        (function () {
+          _this2.result = {};
+          _this2.context.withinContext(function () {
+            (0, _forEach2.default)(_this2.fragmentNames, function (k) {
+              _this2.result[k] = _this2.containerClass.getFragment(k);
+            });
           });
-        });
 
-        this._stoppers = (0, _map3.default)(this.fragmentNames, function (k) {
-          return _this2.result[k].addChangeListener(_this2._handleDataChanges);
-        });
+          var updater = function updater() {
+            _this2._execution = _this2._handleDataChanges();
+          };
 
-        this._execution = Promise.resolve();
-        this._doHandleDataChanges();
+          _this2._stoppers = (0, _map3.default)(_this2.fragmentNames, function (k) {
+            return _this2.result[k].addChangeListener(updater);
+          });
+
+          updater();
+        })();
       }
 
       return this._execution;
@@ -105,6 +138,8 @@ var QueryExecutor = (function (_EventEmitter) {
 
     /**
      * Stops query executing and listening for changes.
+     * Returns a promise resolved when query stopped.
+     * @return {Promise}
      */
 
   }, {
@@ -114,7 +149,7 @@ var QueryExecutor = (function (_EventEmitter) {
 
       (0, _invariant2.default)(this._execution, 'stop(...): query is not executing');
 
-      this._execution.then(function () {
+      return this._execution.then(function () {
         (0, _forEach2.default)(_this3._stoppers, function (stop) {
           return stop();
         });
@@ -130,6 +165,7 @@ var QueryExecutor = (function (_EventEmitter) {
      * exists in a given object and not exists in variables map
      * then it will be ignored.
      * @param  {Object} nextProps
+     * @return {Promise} resolved when variables updated
      */
 
   }, {
@@ -139,23 +175,16 @@ var QueryExecutor = (function (_EventEmitter) {
 
       (0, _invariant2.default)(this._execution, 'updateVariables(...): query is not executing');
 
-      this._execution.then(function () {
+      return this._execution.then(function () {
+        var updated = false;
         (0, _forEach2.default)(nextProps, function (prop, k) {
           if (_this4.variables[k]) {
             _this4.variables[k](prop);
+            updated = true;
           }
         });
+        return updated;
       });
-    }
-
-    /**
-     * DEBOUNCED version of `_doHandleDataChanges` (in constructor)
-     */
-
-  }, {
-    key: '_handleDataChanges',
-    value: function _handleDataChanges() {
-      this._doHandleDataChanges();
     }
 
     /**
@@ -164,20 +193,22 @@ var QueryExecutor = (function (_EventEmitter) {
      */
 
   }, {
-    key: '_doHandleDataChanges',
-    value: function _doHandleDataChanges() {
+    key: '_handleDataChanges',
+    value: function _handleDataChanges() {
       var _this5 = this;
 
       var nextPromises = (0, _map3.default)(this.fragmentNames, function (k) {
         return _this5.result[k].promise;
       });
-      var allPromise = Promise.all(nextPromises).then(function () {
-        if (_this5._execution === allPromise) {
+      var resultPromise = Promise.all(nextPromises).then(function () {
+        if (_this5._resultPromise === resultPromise) {
           _this5.emit('update', _this5.result);
         }
+        return _this5.result;
       });
 
-      this._execution = allPromise;
+      this._resultPromise = resultPromise;
+      return this._resultPromise;
     }
   }]);
 

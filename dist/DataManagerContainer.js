@@ -1,5 +1,7 @@
 'use strict';
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 Object.defineProperty(exports, "__esModule", {
@@ -43,8 +45,9 @@ var DataManagerContainer = (function (_React$Component) {
       var _this2 = this;
 
       this._resolved = false;
-      this.query.execute().then(function () {
+      this.query.execute().then(function (result) {
         _this2._resolved = true;
+        _this2.setState({ result: result });
       });
     }
   }, {
@@ -68,7 +71,7 @@ var DataManagerContainer = (function (_React$Component) {
     key: 'render',
     value: function render() {
       var Component = this.props.component; // eslint-disable-line
-      return this._resolved ? _react2.default.createElement(Component, this.state.result) : null;
+      return this._resolved ? _react2.default.createElement(Component, _extends({}, this.props, this.state.result)) : null;
     }
   }]);
 

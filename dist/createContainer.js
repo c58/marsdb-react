@@ -39,9 +39,13 @@ var _QueryExecutor2 = _interopRequireDefault(_QueryExecutor);
 
 var _utils = require('./utils');
 
-var _utils2 = _interopRequireDefault(_utils);
+var utils = _interopRequireWildcard(_utils);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -49,21 +53,23 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
-
 /**
- * High-order container creator
+ * High-order data container creator
  * @param  {Component} Component
  * @param  {Object} options.fragments
  * @param  {Object} options.initVars
  * @return {Component}
  */
 function createContainer(Component, _ref) {
-  var fragments = _ref.fragments;
-  var initialVariables = _ref.initialVariables;
-  var versions = _ref.versions;
+  var _ref$fragments = _ref.fragments;
+  var fragments = _ref$fragments === undefined ? {} : _ref$fragments;
+  var _ref$initialVariables = _ref.initialVariables;
+  var initialVariables = _ref$initialVariables === undefined ? {} : _ref$initialVariables;
+  var _ref$versions = _ref.versions;
+  var versions = _ref$versions === undefined ? {} : _ref$versions;
 
-  (0, _invariant2.default)((typeof fragments === 'undefined' ? 'undefined' : _typeof(fragments)) === 'object' && (0, _keys3.default)(fragments).length > 0, 'createContainer(...): fragments must be non-empty object');
+  var componentName = Component.displayName || Component.name;
+  var containerName = 'Mars(' + componentName + ')';
 
   var fragmentKeys = (0, _keys3.default)(fragments);
   var getPropsHash = function getPropsHash(props) {
@@ -93,9 +99,14 @@ function createContainer(Component, _ref) {
     _createClass(Container, [{
       key: 'shouldComponentUpdate',
       value: function shouldComponentUpdate(nextProps) {
-        var nextHash = getPropsHash(nextProps);
-        var shouldUpdate = nextHash !== this.prevHash;
-        this.prevHash = nextHash;
+        var shouldUpdate = nextProps.children && nextProps.children.length > 0;
+
+        if (!shouldUpdate) {
+          var nextHash = getPropsHash(nextProps);
+          shouldUpdate = nextHash !== this.prevHash;
+          this.prevHash = nextHash;
+        }
+
         return shouldUpdate;
       }
     }, {
@@ -121,20 +132,24 @@ function createContainer(Component, _ref) {
         (0, _invariant2.default)(typeof fragment === 'function' || (typeof fragment === 'undefined' ? 'undefined' : _typeof(fragment)) === 'object', 'getFragment(...): a fragment must be a function or an object');
 
         if ((typeof fragment === 'undefined' ? 'undefined' : _typeof(fragment)) === 'object') {
-          return _utils2.default._getJoinFunction(Container, fragment, vars, childContext);
+          return utils._getJoinFunction(Container, fragment, vars, childContext);
         } else {
-          return _utils2.default._getFragmentValue(Container, fragment, vars, childContext);
+          return utils._getFragmentValue(Container, fragment, vars, childContext);
         }
       }
     }, {
       key: 'getQuery',
-      value: function getQuery(initVarsOverride) {
-        return new _QueryExecutor2.default(fragments, initVarsOverride, Container);
+      value: function getQuery() {
+        var initVarsOverride = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+        var initVars = (0, _assign3.default)({}, initialVariables, initVarsOverride);
+        return new _QueryExecutor2.default(fragments, initVars, Container);
       }
     }]);
 
     return Container;
   })(_react2.default.Component);
 
+  Container.displayName = containerName;
   return Container;
 }

@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.noop = undefined;
 exports._isProperty = _isProperty;
 exports._isCursor = _isCursor;
 exports._getFragmentValue = _getFragmentValue;
@@ -30,7 +31,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
 // Internals
 var _propertyVersionId = 0;
-var noop = function noop() {}; // eslint-disable-line
+var noop = exports.noop = function noop() {}; // eslint-disable-line
 
 /**
  * Return true if given value is a property
@@ -156,7 +157,9 @@ function _createProperty(initValue) {
   var prop = function prop() {
     if (arguments.length > 0) {
       store = arguments[0];
-      prop.emitChange();
+      if (arguments.length === 1) {
+        prop.emitChange();
+      }
     }
     return store;
   };
