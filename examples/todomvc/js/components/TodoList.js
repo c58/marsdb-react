@@ -64,8 +64,7 @@ export default createContainer(TodoList, {
         case 'active': query.complete = false; break;
         case 'completed': query.complete = true; break;
       };
-      return TodoModel.find(query).limit(limit())
-        .join(Todo.getFragment('todo'))
+      return TodoModel.find(query).limit(limit());
     }
   },
 });

@@ -17,7 +17,7 @@ import classnames from 'classnames';
 import { createContainer } from 'marsdb-react';
 
 
-class Todo extends React.Component {
+export default class Todo extends React.Component {
   state = {
     isEditing: false,
   };
@@ -87,18 +87,3 @@ class Todo extends React.Component {
     );
   }
 }
-
-export default createContainer(Todo, {
-  fragments: {
-    todo: {}
-    // empty fragment is used for two reasons
-    // 1. As a placeholder for a future needs
-    // 2. For optimal component updating when given
-    //    todo is not changed
-  },
-  versions: {
-    // Component will be updated only when todo's
-    // `updatedAt` field changed
-    todo: (doc) => doc.updatedAt.getTime()
-  }
-});
