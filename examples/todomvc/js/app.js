@@ -16,25 +16,19 @@ import {createHashHistory} from 'history';
 import {IndexRoute, Route} from 'react-router';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {RelayRouter} from 'react-router-relay';
 import TodoApp from './components/TodoApp';
 import TodoList from './components/TodoList';
-import ViewerQueries from './queries/ViewerQueries';
+import MarsRouter from './MarsRouter';
+
 
 ReactDOM.render(
-  <RelayRouter history={createHashHistory({queryKey: false})}>
-    <Route
-      path="/" component={TodoApp}
-      queries={ViewerQueries}>
+  <MarsRouter history={createHashHistory({queryKey: false})}>
+    <Route path="/" component={TodoApp}>
       <IndexRoute
         component={TodoList}
-        queries={ViewerQueries}
         prepareParams={() => ({status: 'any'})}
       />
-      <Route
-        path=":status" component={TodoList}
-        queries={ViewerQueries}
-      />
+      <Route path=":status" component={TodoList} />
     </Route>
   </RelayRouter>,
   document.getElementById('root')

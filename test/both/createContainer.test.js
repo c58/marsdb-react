@@ -10,5 +10,23 @@ chai.should();
 
 
 describe('createContainer', function () {
+  describe('#shouldComponentUpdate', function () {
 
+  });
+
+  describe('#render', function () {
+
+  });
+
+  describe('#getFragment', function () {
+
+  });
+
+  describe('#getQuery', function () {
+
+  });
+
+  describe('#getPropsHash', function () {
+
+  });
 });

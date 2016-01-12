@@ -25,7 +25,7 @@
     "fast.js": "^0.1.1",
     "invariant": "^2.2.0",
     "keymirror": "^0.1.1",
-    "marsdb": "^0.4.3",
+    "marsdb": "^0.4.4",
     "react": "^0.14.5"
   },
   "devDependencies": {
