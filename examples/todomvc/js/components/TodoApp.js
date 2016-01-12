@@ -52,8 +52,8 @@ class TodoApp extends React.Component {
             Double-click to edit a todo
           </p>
           <p>
-            Created by the <a href="https://facebook.github.io/relay/">
-              Relay team
+            Created by  <a href="https://github.com/c58">
+              Artem Artemyev
             </a>
           </p>
           <p>

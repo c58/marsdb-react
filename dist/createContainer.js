@@ -9,10 +9,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = createContainer;
 
-var _forEach = require('fast.js/forEach');
-
-var _forEach2 = _interopRequireDefault(_forEach);
-
 var _keys2 = require('fast.js/object/keys');
 
 var _keys3 = _interopRequireDefault(_keys2);
@@ -58,7 +54,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  * @param  {Component} Component
  * @param  {Object} options.fragments
  * @param  {Object} options.initVars
- * @param  {Object} options.versions
  * @return {Component}
  */
 function createContainer(Component, _ref) {
@@ -66,13 +61,10 @@ function createContainer(Component, _ref) {
   var fragments = _ref$fragments === undefined ? {} : _ref$fragments;
   var _ref$initialVariables = _ref.initialVariables;
   var initialVariables = _ref$initialVariables === undefined ? {} : _ref$initialVariables;
-  var _ref$versions = _ref.versions;
-  var versions = _ref$versions === undefined ? {} : _ref$versions;
 
   var componentName = Component.displayName || Component.name;
   var containerName = 'Mars(' + componentName + ')';
   var fragmentKeys = (0, _keys3.default)(fragments);
-  var versionKeys = (0, _keys3.default)(versions);
 
   var Container = (function (_React$Component) {
     _inherits(Container, _React$Component);
@@ -86,16 +78,7 @@ function createContainer(Component, _ref) {
     _createClass(Container, [{
       key: 'render',
       value: function render() {
-        var _this2 = this;
-
         var variables = this.props[fragmentKeys[0]].context.getVariables(Container);
-
-        (0, _forEach2.default)(versionKeys, function (k) {
-          var prop = _this2.props[k] || variables[k];
-          if (utils._isProperty(prop)) {
-            prop.version = versions[k](prop());
-          }
-        });
 
         return _react2.default.createElement(Component, _extends({}, this.props, {
           variables: variables
