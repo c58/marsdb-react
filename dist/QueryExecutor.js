@@ -205,6 +205,9 @@ var QueryExecutor = (function (_EventEmitter) {
           _this5.emit('update', _this5.result);
         }
         return _this5.result;
+      }, function (error) {
+        _this5.emit('error', error);
+        return _this5.result;
       });
 
       this._resultPromise = resultPromise;

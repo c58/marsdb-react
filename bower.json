@@ -13,7 +13,9 @@
     "react",
     "db",
     "database",
-    "meteor"
+    "meteor",
+    "relay",
+    "redux"
   ],
   "homepage": "https://github.com/c58/marsdb-react",
   "repository": {

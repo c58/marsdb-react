@@ -21,7 +21,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 /**
- *
+ * Component for rendering data container
  */
 
 var DataManagerContainer = (function (_React$Component) {
@@ -68,14 +68,24 @@ var DataManagerContainer = (function (_React$Component) {
       this.query.updateVariables(nextProps);
     }
   }, {
+    key: 'renderLoading',
+    value: function renderLoading() {
+      return this.props.renderLoading();
+    }
+  }, {
     key: 'render',
     value: function render() {
       var Component = this.props.component; // eslint-disable-line
-      return this._resolved ? _react2.default.createElement(Component, _extends({}, this.props, this.state.result)) : null;
+      return this._resolved ? _react2.default.createElement(Component, _extends({}, this.props, this.state.result)) : this.renderLoading();
     }
   }]);
 
   return DataManagerContainer;
 })(_react2.default.Component);
 
+DataManagerContainer.defaultProps = {
+  renderLoading: function renderLoading() {
+    return null;
+  }
+};
 exports.default = DataManagerContainer;
