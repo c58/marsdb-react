@@ -17,7 +17,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import TodoApp from './components/TodoApp';
 import TodoList from './components/TodoList';
-import MarsRouter from './MarsRouter';
+import MarsRouter from 'marsdb-react-router';
 
 
 ReactDOM.render(
