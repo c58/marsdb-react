@@ -3,6 +3,7 @@ MarsDB-React
 
 [![Build Status](https://travis-ci.org/c58/marsdb-react.svg?branch=master)](https://travis-ci.org/c58/marsdb-react)
 [![npm version](https://badge.fury.io/js/marsdb-react.svg)](https://www.npmjs.com/package/marsdb-react)
+[![Coverage Status](https://coveralls.io/repos/c58/marsdb-react/badge.svg?branch=master&service=github)](https://coveralls.io/github/c58/marsdb-react?branch=master)
 [![Dependency Status](https://david-dm.org/c58/marsdb-react.svg)](https://david-dm.org/c58/marsdb-react)
 
 Declarative data-binding for React based on [MarsDB](https://github.com/c58/marsdb), inspired by [Relay](https://github.com/facebook/relay), [Redux](https://github.com/rackt/redux), [Flux](https://facebook.github.io/flux/) and [Mithril](https://github.com/lhorie/mithril.js/).
