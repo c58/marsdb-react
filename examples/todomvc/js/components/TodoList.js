@@ -56,8 +56,8 @@ export default createContainer(TodoList, {
     limit: 10000,
   },
   fragments: {
-    totalCount: () => TodoModel.count(),
-    completedCount: () => TodoModel.count({complete: true}),
+    totalCount: () => TodoModel.query.totalCount,
+    completedCount: () => TodoModel.query.completedCount,
     todos: ({limit, status}) => {
       const query = {};
       switch (status()) {

@@ -4,6 +4,10 @@ import Collection from './ConfiguredCollection';
 const TodoModel = new Collection('todos');
 export default TodoModel;
 
+TodoModel.query = {
+  completedCount: TodoModel.count({complete: true}),
+  totalCount: TodoModel.count(),
+}
 
 TodoModel.addTodo = (text) => {
   TodoModel.insert({

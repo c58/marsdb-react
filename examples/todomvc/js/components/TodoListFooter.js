@@ -54,7 +54,7 @@ class TodoListFooter extends React.Component {
 
 export default createContainer(TodoListFooter, {
   fragments: {
-    completedCount: () => TodoModel.count({complete: true}),
-    totalCount: () => TodoModel.count(),
+    completedCount: () => TodoModel.query.completedCount,
+    totalCount: () => TodoModel.query.totalCount,
   },
 });
