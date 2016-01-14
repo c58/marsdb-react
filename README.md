@@ -18,7 +18,7 @@ Declarative data-binding for React based on [MarsDB](https://github.com/c58/mars
 ### Basic concepts
 MarsDB-React uses Relay-like concept of data reuirements declaration. Just make a component and create a data container below based on the component.
 
-```
+```javascript
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { createContainer, DataManagerContainer } from 'marsdb-react';
