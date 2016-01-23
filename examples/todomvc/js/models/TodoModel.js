@@ -46,7 +46,8 @@ TodoModel.markAllTodos = (status) => {
     {$set: {
       complete: status,
       updatedAt: new Date(),
-    }}
+    }},
+    {multi: true}
   );
 };
 
