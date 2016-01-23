@@ -253,14 +253,6 @@ describe('Utils', function () {
               utils._isProperty(doc.test).should.be.true;
               doc.test().should.have.length(1);
               vars.gtVal(1);
-            } else if (calls === 1) {
-              calls++;
-              // On variable change it should emit a change
-              // event to a result prop, and prop change listener in
-              // join func emit a cursor update to the parent cursor,
-              // what we are observing.
-              // TODO: try to fix this (remove useless update) wthout
-              //       broking other tests.
             } else {
               utils._isProperty(doc.test).should.be.true;
               doc.test().should.have.length(0);
