@@ -1,6 +1,6 @@
 {
   "name": "marsdb-react",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "author": "Artem Artemev <art@studytime.me>",
   "contributors": [
     "Artem Artemev"
@@ -25,10 +25,13 @@
   "dependencies": {
     "fast.js": "^0.1.1",
     "invariant": "^2.2.0",
-    "marsdb": "^0.5.8",
-    "react": "^0.14.5"
+  },
+  "peerDependencies": {
+    "marsdb": "0.6.x",
+    "react": "0.14.x"
   },
   "devDependencies": {
+    "marsdb": "^0.6.0",
     "core-js": "^2.0.0",
     "babel-cli": "^6.3.17",
     "babel-eslint": "^5.0.0-beta6",
