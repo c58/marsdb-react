@@ -31,6 +31,8 @@
     "react": "0.14.x"
   },
   "devDependencies": {
+    "marsdb": "^0.6.0",
+    "react": "^0.14.0",
     "core-js": "^2.0.0",
     "babel-cli": "^6.3.17",
     "babel-eslint": "^5.0.0-beta6",

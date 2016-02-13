@@ -1,13 +1,13 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}(g.Mars || (g.Mars = {})).React = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _react = require('react');
 
@@ -25,7 +25,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  * Component for rendering data container
  */
 
-var DataManagerContainer = (function (_React$Component) {
+var DataManagerContainer = function (_React$Component) {
   _inherits(DataManagerContainer, _React$Component);
 
   function DataManagerContainer(props, context) {
@@ -82,7 +82,7 @@ var DataManagerContainer = (function (_React$Component) {
   }]);
 
   return DataManagerContainer;
-})(_react2.default.Component);
+}(_react2.default.Component);
 
 DataManagerContainer.defaultProps = {
   renderLoading: function renderLoading() {
@@ -93,11 +93,11 @@ exports.default = DataManagerContainer;
 },{"react":undefined}],2:[function(require,module,exports){
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _forEach = require('fast.js/forEach');
 
@@ -139,7 +139,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  * returning the context.
  */
 
-var ExecutionContext = (function (_EventEmitter) {
+var ExecutionContext = function (_EventEmitter) {
   _inherits(ExecutionContext, _EventEmitter);
 
   function ExecutionContext() {
@@ -151,7 +151,6 @@ var ExecutionContext = (function (_EventEmitter) {
 
     _this.variables = variables;
     _this.emitCleanup = _this.emitCleanup.bind(_this);
-    _this.setMaxListeners(Infinity);
     return _this;
   }
 
@@ -161,6 +160,7 @@ var ExecutionContext = (function (_EventEmitter) {
    * @param {Function} fn
    * @return {Function}
    */
+
 
   _createClass(ExecutionContext, [{
     key: 'addCleanupListener',
@@ -368,17 +368,17 @@ var ExecutionContext = (function (_EventEmitter) {
   }]);
 
   return ExecutionContext;
-})(_marsdb.EventEmitter);
+}(_marsdb.EventEmitter);
 
 exports.default = ExecutionContext;
 },{"./utils":5,"fast.js/forEach":9,"fast.js/map":11,"fast.js/object/keys":14,"invariant":16,"marsdb":undefined}],3:[function(require,module,exports){
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _keys2 = require('fast.js/object/keys');
 
@@ -426,7 +426,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  * of proprties for each fragment.
  */
 
-var QueryExecutor = (function (_EventEmitter) {
+var QueryExecutor = function (_EventEmitter) {
   _inherits(QueryExecutor, _EventEmitter);
 
   function QueryExecutor(fragments, initVarsOverride, containerClass) {
@@ -452,6 +452,7 @@ var QueryExecutor = (function (_EventEmitter) {
    * @param  {Number} batchSize
    * @return {CursorObservable}
    */
+
 
   _createClass(QueryExecutor, [{
     key: 'batchSize',
@@ -590,19 +591,22 @@ var QueryExecutor = (function (_EventEmitter) {
   }]);
 
   return QueryExecutor;
-})(_marsdb.EventEmitter);
+}(_marsdb.EventEmitter);
 
 exports.default = QueryExecutor;
 },{"./ExecutionContext":2,"fast.js/forEach":9,"fast.js/map":11,"fast.js/object/keys":14,"invariant":16,"marsdb":undefined}],4:[function(require,module,exports){
 'use strict';
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 exports.default = createContainer;
 
 var _keys2 = require('fast.js/object/keys');
@@ -637,8 +641,6 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -662,7 +664,7 @@ function createContainer(Component, _ref) {
   var containerName = 'Mars(' + componentName + ')';
   var fragmentKeys = (0, _keys3.default)(fragments);
 
-  var Container = (function (_React$Component) {
+  var Container = function (_React$Component) {
     _inherits(Container, _React$Component);
 
     function Container() {
@@ -713,7 +715,7 @@ function createContainer(Component, _ref) {
     }]);
 
     return Container;
-  })(_react2.default.Component);
+  }(_react2.default.Component);
 
   Container.displayName = containerName;
   return Container;
@@ -725,6 +727,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.noop = undefined;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 exports._isProperty = _isProperty;
 exports._isCursor = _isCursor;
 exports._getFragmentValue = _getFragmentValue;
@@ -747,8 +752,6 @@ var _CursorObservable = require('marsdb/dist/CursorObservable');
 var _CursorObservable2 = _interopRequireDefault(_CursorObservable);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 // Internals
 var _propertyVersionId = 0;
@@ -824,7 +827,7 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
     if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object' && doc !== null) {
       return (0, _map3.default)(joinObjKeys, function (k) {
         if (doc[k] === undefined) {
-          var _ret = (function () {
+          var _ret = function () {
             var valueGenerator = function valueGenerator(opts) {
               return joinObj[k](doc, opts);
             };
@@ -843,7 +846,7 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
                 return res;
               })
             };
-          })();
+          }();
 
           if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
         }
@@ -872,7 +875,6 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
  */
 function _createProperty(initValue) {
   var emitter = new _marsdb.EventEmitter();
-  emitter.setMaxListeners(Infinity);
   var store = initValue;
 
   var prop = function prop() {

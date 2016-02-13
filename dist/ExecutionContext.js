@@ -1,10 +1,10 @@
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _forEach = require('fast.js/forEach');
 
@@ -46,7 +46,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  * returning the context.
  */
 
-var ExecutionContext = (function (_EventEmitter) {
+var ExecutionContext = function (_EventEmitter) {
   _inherits(ExecutionContext, _EventEmitter);
 
   function ExecutionContext() {
@@ -58,7 +58,6 @@ var ExecutionContext = (function (_EventEmitter) {
 
     _this.variables = variables;
     _this.emitCleanup = _this.emitCleanup.bind(_this);
-    _this.setMaxListeners(Infinity);
     return _this;
   }
 
@@ -68,6 +67,7 @@ var ExecutionContext = (function (_EventEmitter) {
    * @param {Function} fn
    * @return {Function}
    */
+
 
   _createClass(ExecutionContext, [{
     key: 'addCleanupListener',
@@ -275,6 +275,6 @@ var ExecutionContext = (function (_EventEmitter) {
   }]);
 
   return ExecutionContext;
-})(_marsdb.EventEmitter);
+}(_marsdb.EventEmitter);
 
 exports.default = ExecutionContext;

@@ -4,6 +4,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.noop = undefined;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 exports._isProperty = _isProperty;
 exports._isCursor = _isCursor;
 exports._getFragmentValue = _getFragmentValue;
@@ -26,8 +29,6 @@ var _CursorObservable = require('marsdb/dist/CursorObservable');
 var _CursorObservable2 = _interopRequireDefault(_CursorObservable);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
 
 // Internals
 var _propertyVersionId = 0;
@@ -103,7 +104,7 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
     if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object' && doc !== null) {
       return (0, _map3.default)(joinObjKeys, function (k) {
         if (doc[k] === undefined) {
-          var _ret = (function () {
+          var _ret = function () {
             var valueGenerator = function valueGenerator(opts) {
               return joinObj[k](doc, opts);
             };
@@ -122,7 +123,7 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
                 return res;
               })
             };
-          })();
+          }();
 
           if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
         }
@@ -151,7 +152,6 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
  */
 function _createProperty(initValue) {
   var emitter = new _marsdb.EventEmitter();
-  emitter.setMaxListeners(Infinity);
   var store = initValue;
 
   var prop = function prop() {
