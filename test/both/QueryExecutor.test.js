@@ -162,7 +162,7 @@ describe('QueryExecutor', function () {
         query.on('update', cb1);
         query.context.addCleanupListener(cb2);
         return query.stop().then(() => {
-          cb1.should.have.callCount(1);
+          cb1.should.have.callCount(0);
           cb2.should.have.callCount(1);
           query.listeners('update', true).should.be.false;
           query.context.listeners('cleanup', true).should.be.true;
