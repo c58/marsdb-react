@@ -111,7 +111,7 @@ describe('Utils', function () {
       var cb = sinon.spy();
       const propA = utils._createProperty('val');
       const toPropB = utils._createProperty('val2');
-      propA.addChangeListener(cb);
+      const stopper = propA.addChangeListener(cb);
       propA.proxyTo(toPropB);
       propA().should.be.equal('val2');
       toPropB().should.be.equal('val2');
@@ -122,6 +122,10 @@ describe('Utils', function () {
       toPropB('val3');
       cb.should.have.callCount(1);
       toPropB().should.be.equal('val3');
+      stopper();
+      toPropB('val4');
+      cb.should.have.callCount(1);
+      toPropB().should.be.equal('val4');
     });
   });
 
