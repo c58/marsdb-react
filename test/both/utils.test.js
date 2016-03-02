@@ -106,6 +106,23 @@ describe('Utils', function () {
       property('val1', true);
       cb.should.have.been.callCount(2);
     });
+
+    it('should be able to proxy to another prop', function () {
+      var cb = sinon.spy();
+      const propA = utils._createProperty('val');
+      const toPropB = utils._createProperty('val2');
+      propA.addChangeListener(cb);
+      propA.proxyTo(toPropB);
+      propA().should.be.equal('val2');
+      toPropB().should.be.equal('val2');
+      propA.version.should.be.equal(toPropB.version);
+      propA.version++;
+      propA.version.should.be.equal(toPropB.version);
+      cb.should.have.callCount(0);
+      toPropB('val3');
+      cb.should.have.callCount(1);
+      toPropB().should.be.equal('val3');
+    });
   });
 
   describe('#_createPropertyWithContext', function () {
@@ -201,6 +218,33 @@ describe('Utils', function () {
         })
       })
     });
+    it('should wait until vars is ready', function () {
+      class ContainerClass {}
+      const context = new ExecutionContext();
+      let resolveVars = null;
+      const vars = context.getVariables(ContainerClass, {testVar: 123}, {}, (vrs) => {
+        return new Promise(r => {
+          vrs.testVar(321);
+          resolveVars = r
+        });
+      });
+      let val = 10;
+      const valGen = sinon.spy(() => val++);
+      const res = utils._getFragmentValue(ContainerClass, valGen, vars, context);
+      const cb = sinon.spy();
+      const stopListen = res.addChangeListener(cb);
+
+      expect(res()).to.be.null;
+      cb.should.have.callCount(0);
+      valGen.should.have.callCount(0);
+      resolveVars();
+      return res.promise.then(() => {
+        vars.testVar().should.be.equal(321);
+        res().should.be.equal(10);
+        cb.should.have.callCount(1);
+        valGen.should.have.callCount(1);
+      })
+    });
   });
 
   describe('#_getJoinFunction', function () {
@@ -239,8 +283,12 @@ describe('Utils', function () {
         system.insert({field: 'value'}),
       ]).then(() => {
         class ContainerClass {}
+        let resolveVars = null;
         const context = new ExecutionContext();
-        const vars = context.getVariables(ContainerClass, {gtVal: 0});
+        const vars = context.getVariables(ContainerClass, {gtVal: 100}, {}, ({gtVal}) => {
+          gtVal(0);
+          return new Promise(r => resolveVars = r);
+        });
         const prop = utils._createProperty('val');
         const joinObj = { test: (doc, {gtVal}) => db.find({a: {$gt: gtVal()}}).debounce(0).batchSize(0) };
         const joinFn = utils._getJoinFunction(ContainerClass, joinObj, vars, context);
@@ -259,6 +307,10 @@ describe('Utils', function () {
               resolve();
             }
           });
+          setTimeout(() => {
+            calls.should.be.equal(0);
+            resolveVars();
+          }, 50);
         });
       })
     });
