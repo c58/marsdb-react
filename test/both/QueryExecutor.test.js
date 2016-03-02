@@ -51,16 +51,26 @@ describe('QueryExecutor', function () {
   describe('#execute', function () {
     it('should return a promise that resolved when all data revceived', function () {
       class TestComponent {}
+      let resolveVars = null;
       const containerClass = createContainer(TestComponent, {
-        initialVariables: { testVar: 'val' },
-        fragments: { test: ({testVar}) => testVar() + 'val' },
+        initialVariables: { testVar: null },
+        fragments: {
+          test: ({testVar}) => testVar() + 'val',
+          test2: ({testVar}) => testVar() + 'val2',
+        },
+        prepareVariables: ({testVar}) =>
+          (new Promise(r => resolveVars = r)).then(() => {
+            testVar('val');
+          }),
       });
       const query = containerClass.getQuery();
       expect(query.result).to.be.undefined;
       const res = query.execute();
-      query.result.test().should.be.equal('valval');
+      expect(query.result.test()).to.be.null;
+      resolveVars();
       return res.then(() => {
         query.result.test().should.be.equal('valval');
+        query.result.test2().should.be.equal('valval2');
       });
     });
 
