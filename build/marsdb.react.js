@@ -957,12 +957,13 @@ function _createProperty(initValue) {
     (0, _forEach2.default)(emitter.listeners('change'), function (cb) {
       return toProp.addChangeListener(cb);
     });
-    emitter = null;
+    emitter = toProp.__emitter;
     store = null;
   };
 
   prop.version = ++_propertyVersionId;
   prop.isProperty = true;
+  prop.__emitter = emitter;
   return prop;
 }
 
