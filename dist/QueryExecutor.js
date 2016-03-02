@@ -55,7 +55,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var QueryExecutor = function (_EventEmitter) {
   _inherits(QueryExecutor, _EventEmitter);
 
-  function QueryExecutor(fragments, initVarsOverride, containerClass) {
+  function QueryExecutor(fragments, initVarsOverride, containerClass, prepareVariables) {
     _classCallCheck(this, QueryExecutor);
 
     var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(QueryExecutor).call(this));
@@ -64,7 +64,7 @@ var QueryExecutor = function (_EventEmitter) {
     _this.fragmentNames = (0, _keys3.default)(fragments);
     _this.initVarsOverride = initVarsOverride;
     _this.context = new _ExecutionContext2.default();
-    _this.variables = _this.context.getVariables(containerClass, initVarsOverride);
+    _this.variables = _this.context.getVariables(containerClass, initVarsOverride, {}, prepareVariables);
     _this._handleDataChanges = (0, _marsdb.debounce)(_this._handleDataChanges.bind(_this), 1000 / 60, 5);
     return _this;
   }
@@ -150,11 +150,14 @@ var QueryExecutor = function (_EventEmitter) {
 
       (0, _invariant2.default)(this._execution, 'stop(...): query is not executing');
 
+      // Remove all update listeners synchronously to avoid
+      // updates of old data
+      this.removeAllListeners();
+
       return this._execution.then(function () {
         (0, _forEach2.default)(_this3._stoppers, function (stop) {
           return stop();
         });
-        _this3.removeAllListeners();
         _this3.context.emitCleanup();
         _this3._execution = null;
       });

@@ -244,6 +244,7 @@ var ExecutionContext = function (_EventEmitter) {
     value: function getVariables(containerClass) {
       var initVars = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
       var mapVars = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+      var prepareVariables = arguments.length <= 3 || arguments[3] === undefined ? null : arguments[3];
 
       var contextVars = this.variables.get(containerClass);
       if (!contextVars) {
@@ -260,6 +261,12 @@ var ExecutionContext = function (_EventEmitter) {
             contextVars[k] = utils._createProperty(initVars[k]);
           }
         }
+      }
+
+      if (prepareVariables) {
+        Object.defineProperty(contextVars, 'promise', {
+          value: Promise.resolve(prepareVariables(contextVars))
+        });
       }
 
       return contextVars;
@@ -281,7 +288,7 @@ var ExecutionContext = function (_EventEmitter) {
 
       var updater = function updater() {
         _this3.emitCleanup();
-        if (prop.promise) {
+        if (prop.promise && prop.promise.stop) {
           prop.promise.stop();
         }
 
@@ -429,7 +436,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var QueryExecutor = function (_EventEmitter) {
   _inherits(QueryExecutor, _EventEmitter);
 
-  function QueryExecutor(fragments, initVarsOverride, containerClass) {
+  function QueryExecutor(fragments, initVarsOverride, containerClass, prepareVariables) {
     _classCallCheck(this, QueryExecutor);
 
     var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(QueryExecutor).call(this));
@@ -438,7 +445,7 @@ var QueryExecutor = function (_EventEmitter) {
     _this.fragmentNames = (0, _keys3.default)(fragments);
     _this.initVarsOverride = initVarsOverride;
     _this.context = new _ExecutionContext2.default();
-    _this.variables = _this.context.getVariables(containerClass, initVarsOverride);
+    _this.variables = _this.context.getVariables(containerClass, initVarsOverride, {}, prepareVariables);
     _this._handleDataChanges = (0, _marsdb.debounce)(_this._handleDataChanges.bind(_this), 1000 / 60, 5);
     return _this;
   }
@@ -524,11 +531,14 @@ var QueryExecutor = function (_EventEmitter) {
 
       (0, _invariant2.default)(this._execution, 'stop(...): query is not executing');
 
+      // Remove all update listeners synchronously to avoid
+      // updates of old data
+      this.removeAllListeners();
+
       return this._execution.then(function () {
         (0, _forEach2.default)(_this3._stoppers, function (stop) {
           return stop();
         });
-        _this3.removeAllListeners();
         _this3.context.emitCleanup();
         _this3._execution = null;
       });
@@ -659,6 +669,8 @@ function createContainer(Component, _ref) {
   var fragments = _ref$fragments === undefined ? {} : _ref$fragments;
   var _ref$initialVariables = _ref.initialVariables;
   var initialVariables = _ref$initialVariables === undefined ? {} : _ref$initialVariables;
+  var _ref$prepareVariables = _ref.prepareVariables;
+  var prepareVariables = _ref$prepareVariables === undefined ? null : _ref$prepareVariables;
 
   var componentName = Component.displayName || Component.name;
   var containerName = 'Mars(' + componentName + ')';
@@ -678,9 +690,7 @@ function createContainer(Component, _ref) {
       value: function render() {
         var variables = this.props[fragmentKeys[0]].context.getVariables(Container);
 
-        return _react2.default.createElement(Component, _extends({}, this.props, {
-          variables: variables
-        }));
+        return _react2.default.createElement(Component, _extends({}, this.props, { variables: variables }));
       }
     }], [{
       key: 'getFragment',
@@ -694,7 +704,7 @@ function createContainer(Component, _ref) {
         var childContext = parentContext.createChildContext();
         var fragment = fragments[name];
         var initVars = (0, _assign3.default)({}, initialVariables, initVarsOverride);
-        var vars = childContext.getVariables(Container, initVars, mapping);
+        var vars = childContext.getVariables(Container, initVars, mapping, prepareVariables);
 
         (0, _invariant2.default)(typeof fragment === 'function' || (typeof fragment === 'undefined' ? 'undefined' : _typeof(fragment)) === 'object', 'getFragment(...): a fragment must be a function or an object');
 
@@ -710,7 +720,7 @@ function createContainer(Component, _ref) {
         var initVarsOverride = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
         var initVars = (0, _assign3.default)({}, initialVariables, initVarsOverride);
-        return new _QueryExecutor2.default(fragments, initVars, Container);
+        return new _QueryExecutor2.default(fragments, initVars, Container, prepareVariables);
       }
     }]);
 
@@ -736,6 +746,10 @@ exports._getFragmentValue = _getFragmentValue;
 exports._getJoinFunction = _getJoinFunction;
 exports._createProperty = _createProperty;
 exports._createPropertyWithContext = _createPropertyWithContext;
+
+var _forEach = require('fast.js/forEach');
+
+var _forEach2 = _interopRequireDefault(_forEach);
 
 var _map2 = require('fast.js/map');
 
@@ -788,26 +802,49 @@ function _isCursor(val) {
  * @return {Property}
  */
 function _getFragmentValue(containerClass, valueGenerator, vars, context) {
-  var value = context.withinContext(function () {
-    return valueGenerator(vars);
-  });
+  var _createFragmentProp = function _createFragmentProp() {
+    var value = context.withinContext(function () {
+      return valueGenerator(vars);
+    });
 
-  var prop = undefined;
-  if (_isProperty(value)) {
-    prop = value;
-  } else {
-    prop = _createPropertyWithContext(null, context);
-
-    if (_isCursor(value)) {
-      context.trackCursorChange(prop, value);
+    var prop = undefined;
+    if (_isProperty(value)) {
+      prop = value;
     } else {
-      prop(value);
+      prop = _createPropertyWithContext(null, context);
+
+      if (_isCursor(value)) {
+        context.trackCursorChange(prop, value);
+      } else {
+        prop(value);
+      }
+
+      context.trackVariablesChange(prop, vars, valueGenerator);
     }
 
-    context.trackVariablesChange(prop, vars, valueGenerator);
-  }
+    return prop;
+  };
 
-  return prop;
+  if (vars.promise) {
+    var _ret = function () {
+      var proxyProp = _createPropertyWithContext(null, context);
+      proxyProp.promise = vars.promise.then(function () {
+        var fragProp = _createFragmentProp();
+        if (fragProp() !== null) {
+          proxyProp.emitChange();
+        }
+        proxyProp.proxyTo(fragProp);
+        return fragProp.promise;
+      });
+      return {
+        v: proxyProp
+      };
+    }();
+
+    if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+  } else {
+    return _createFragmentProp();
+  }
 }
 
 /**
@@ -827,7 +864,7 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
     if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object' && doc !== null) {
       return (0, _map3.default)(joinObjKeys, function (k) {
         if (doc[k] === undefined) {
-          var _ret = function () {
+          var _ret2 = function () {
             var valueGenerator = function valueGenerator(opts) {
               return joinObj[k](doc, opts);
             };
@@ -848,7 +885,7 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
             };
           }();
 
-          if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+          if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
         }
       });
     }
@@ -876,15 +913,20 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
 function _createProperty(initValue) {
   var emitter = new _marsdb.EventEmitter();
   var store = initValue;
+  var proxyProp = null;
 
   var prop = function prop() {
-    if (arguments.length > 0) {
-      store = arguments[0];
-      if (arguments.length === 1) {
-        prop.emitChange();
+    if (proxyProp) {
+      return proxyProp.apply(null, arguments);
+    } else {
+      if (arguments.length > 0) {
+        store = arguments[0];
+        if (arguments.length === 1) {
+          prop.emitChange();
+        }
       }
+      return store;
     }
-    return store;
   };
 
   prop.emitChange = function () {
@@ -897,6 +939,25 @@ function _createProperty(initValue) {
     return function () {
       emitter.removeListener('change', func);
     };
+  };
+
+  prop.proxyTo = function (toProp) {
+    proxyProp = toProp;
+    Object.defineProperty(prop, 'version', {
+      get: function get() {
+        return toProp.version;
+      },
+      set: function set(newValue) {
+        return toProp.version = newValue;
+      }
+    });
+    prop.addChangeListener = toProp.addChangeListener;
+    prop.emitChange = toProp.emitChange;
+    (0, _forEach2.default)(emitter.listeners('change'), function (cb) {
+      return toProp.addChangeListener(cb);
+    });
+    emitter = null;
+    store = null;
   };
 
   prop.version = ++_propertyVersionId;
@@ -915,7 +976,7 @@ function _createPropertyWithContext(value, context) {
   nextProp.context = context;
   return nextProp;
 }
-},{"fast.js/map":11,"fast.js/object/keys":14,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],6:[function(require,module,exports){
+},{"fast.js/forEach":9,"fast.js/map":11,"fast.js/object/keys":14,"marsdb":undefined,"marsdb/dist/CursorObservable":undefined}],6:[function(require,module,exports){
 var createContainer = require('./dist/createContainer').default;
 var DataManagerContainer = require('./dist/DataManagerContainer').default;
 

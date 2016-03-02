@@ -14,6 +14,10 @@ exports._getJoinFunction = _getJoinFunction;
 exports._createProperty = _createProperty;
 exports._createPropertyWithContext = _createPropertyWithContext;
 
+var _forEach = require('fast.js/forEach');
+
+var _forEach2 = _interopRequireDefault(_forEach);
+
 var _map2 = require('fast.js/map');
 
 var _map3 = _interopRequireDefault(_map2);
@@ -65,26 +69,49 @@ function _isCursor(val) {
  * @return {Property}
  */
 function _getFragmentValue(containerClass, valueGenerator, vars, context) {
-  var value = context.withinContext(function () {
-    return valueGenerator(vars);
-  });
+  var _createFragmentProp = function _createFragmentProp() {
+    var value = context.withinContext(function () {
+      return valueGenerator(vars);
+    });
 
-  var prop = undefined;
-  if (_isProperty(value)) {
-    prop = value;
-  } else {
-    prop = _createPropertyWithContext(null, context);
-
-    if (_isCursor(value)) {
-      context.trackCursorChange(prop, value);
+    var prop = undefined;
+    if (_isProperty(value)) {
+      prop = value;
     } else {
-      prop(value);
+      prop = _createPropertyWithContext(null, context);
+
+      if (_isCursor(value)) {
+        context.trackCursorChange(prop, value);
+      } else {
+        prop(value);
+      }
+
+      context.trackVariablesChange(prop, vars, valueGenerator);
     }
 
-    context.trackVariablesChange(prop, vars, valueGenerator);
-  }
+    return prop;
+  };
 
-  return prop;
+  if (vars.promise) {
+    var _ret = function () {
+      var proxyProp = _createPropertyWithContext(null, context);
+      proxyProp.promise = vars.promise.then(function () {
+        var fragProp = _createFragmentProp();
+        if (fragProp() !== null) {
+          proxyProp.emitChange();
+        }
+        proxyProp.proxyTo(fragProp);
+        return fragProp.promise;
+      });
+      return {
+        v: proxyProp
+      };
+    }();
+
+    if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+  } else {
+    return _createFragmentProp();
+  }
 }
 
 /**
@@ -104,7 +131,7 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
     if ((typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) === 'object' && doc !== null) {
       return (0, _map3.default)(joinObjKeys, function (k) {
         if (doc[k] === undefined) {
-          var _ret = function () {
+          var _ret2 = function () {
             var valueGenerator = function valueGenerator(opts) {
               return joinObj[k](doc, opts);
             };
@@ -125,7 +152,7 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
             };
           }();
 
-          if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+          if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
         }
       });
     }
@@ -153,15 +180,20 @@ function _getJoinFunction(containerClass, joinObj, vars, context) {
 function _createProperty(initValue) {
   var emitter = new _marsdb.EventEmitter();
   var store = initValue;
+  var proxyProp = null;
 
   var prop = function prop() {
-    if (arguments.length > 0) {
-      store = arguments[0];
-      if (arguments.length === 1) {
-        prop.emitChange();
+    if (proxyProp) {
+      return proxyProp.apply(null, arguments);
+    } else {
+      if (arguments.length > 0) {
+        store = arguments[0];
+        if (arguments.length === 1) {
+          prop.emitChange();
+        }
       }
+      return store;
     }
-    return store;
   };
 
   prop.emitChange = function () {
@@ -174,6 +206,25 @@ function _createProperty(initValue) {
     return function () {
       emitter.removeListener('change', func);
     };
+  };
+
+  prop.proxyTo = function (toProp) {
+    proxyProp = toProp;
+    Object.defineProperty(prop, 'version', {
+      get: function get() {
+        return toProp.version;
+      },
+      set: function set(newValue) {
+        return toProp.version = newValue;
+      }
+    });
+    prop.addChangeListener = toProp.addChangeListener;
+    prop.emitChange = toProp.emitChange;
+    (0, _forEach2.default)(emitter.listeners('change'), function (cb) {
+      return toProp.addChangeListener(cb);
+    });
+    emitter = null;
+    store = null;
   };
 
   prop.version = ++_propertyVersionId;

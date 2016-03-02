@@ -151,6 +151,7 @@ var ExecutionContext = function (_EventEmitter) {
     value: function getVariables(containerClass) {
       var initVars = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
       var mapVars = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+      var prepareVariables = arguments.length <= 3 || arguments[3] === undefined ? null : arguments[3];
 
       var contextVars = this.variables.get(containerClass);
       if (!contextVars) {
@@ -167,6 +168,12 @@ var ExecutionContext = function (_EventEmitter) {
             contextVars[k] = utils._createProperty(initVars[k]);
           }
         }
+      }
+
+      if (prepareVariables) {
+        Object.defineProperty(contextVars, 'promise', {
+          value: Promise.resolve(prepareVariables(contextVars))
+        });
       }
 
       return contextVars;
@@ -188,7 +195,7 @@ var ExecutionContext = function (_EventEmitter) {
 
       var updater = function updater() {
         _this3.emitCleanup();
-        if (prop.promise) {
+        if (prop.promise && prop.promise.stop) {
           prop.promise.stop();
         }
 

@@ -62,6 +62,8 @@ function createContainer(Component, _ref) {
   var fragments = _ref$fragments === undefined ? {} : _ref$fragments;
   var _ref$initialVariables = _ref.initialVariables;
   var initialVariables = _ref$initialVariables === undefined ? {} : _ref$initialVariables;
+  var _ref$prepareVariables = _ref.prepareVariables;
+  var prepareVariables = _ref$prepareVariables === undefined ? null : _ref$prepareVariables;
 
   var componentName = Component.displayName || Component.name;
   var containerName = 'Mars(' + componentName + ')';
@@ -81,9 +83,7 @@ function createContainer(Component, _ref) {
       value: function render() {
         var variables = this.props[fragmentKeys[0]].context.getVariables(Container);
 
-        return _react2.default.createElement(Component, _extends({}, this.props, {
-          variables: variables
-        }));
+        return _react2.default.createElement(Component, _extends({}, this.props, { variables: variables }));
       }
     }], [{
       key: 'getFragment',
@@ -97,7 +97,7 @@ function createContainer(Component, _ref) {
         var childContext = parentContext.createChildContext();
         var fragment = fragments[name];
         var initVars = (0, _assign3.default)({}, initialVariables, initVarsOverride);
-        var vars = childContext.getVariables(Container, initVars, mapping);
+        var vars = childContext.getVariables(Container, initVars, mapping, prepareVariables);
 
         (0, _invariant2.default)(typeof fragment === 'function' || (typeof fragment === 'undefined' ? 'undefined' : _typeof(fragment)) === 'object', 'getFragment(...): a fragment must be a function or an object');
 
@@ -113,7 +113,7 @@ function createContainer(Component, _ref) {
         var initVarsOverride = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
         var initVars = (0, _assign3.default)({}, initialVariables, initVarsOverride);
-        return new _QueryExecutor2.default(fragments, initVars, Container);
+        return new _QueryExecutor2.default(fragments, initVars, Container, prepareVariables);
       }
     }]);
 
