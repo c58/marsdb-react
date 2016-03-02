@@ -263,9 +263,10 @@ var ExecutionContext = function (_EventEmitter) {
         }
       }
 
-      if (prepareVariables) {
+      if (prepareVariables && !contextVars.promise) {
         Object.defineProperty(contextVars, 'promise', {
-          value: Promise.resolve(prepareVariables(contextVars))
+          value: Promise.resolve(prepareVariables(contextVars)),
+          configurable: true
         });
       }
 
