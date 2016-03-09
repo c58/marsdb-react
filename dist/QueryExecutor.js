@@ -182,7 +182,7 @@ var QueryExecutor = function (_EventEmitter) {
       return this._execution.then(function () {
         var updated = false;
         (0, _forEach2.default)(nextProps, function (prop, k) {
-          if (_this4.variables[k]) {
+          if (_this4.variables[k] && _this4.variables[k]() !== prop) {
             _this4.variables[k](prop);
             updated = true;
           }
