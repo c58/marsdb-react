@@ -260,6 +260,29 @@ describe('QueryExecutor', function () {
         });
       })
     });
+
+    it('should set new value to var only if val changed', function () {
+      class TestComponent {}
+      const containerClass = createContainer(TestComponent, {
+        initialVariables: { testVar: 0, testVarChanged: 1 },
+        fragments: { test: ({testVar}) => testVar() },
+      });
+      const query = containerClass.getQuery();
+      const cbSpy_1 = sinon.spy();
+      const cbSpy_ch = sinon.spy();
+      query.variables.testVar().should.be.equal(0);
+      query.variables.testVarChanged().should.be.equal(1);
+      query.variables.testVar.addChangeListener(cbSpy_1);
+      query.variables.testVarChanged.addChangeListener(cbSpy_ch);
+      query.debounce(0).batchSize(0);
+      query.execute();
+      return query.updateVariables({testVar: 0, testVarChanged: 0}).then(() => {
+        query.variables.testVar().should.be.equal(0);
+        query.variables.testVarChanged().should.be.equal(0);
+        cbSpy_1.should.have.callCount(0);
+        cbSpy_ch.should.have.callCount(1);
+      })
+    });
   });
 
   describe('#_handleDataChanges', function () {
